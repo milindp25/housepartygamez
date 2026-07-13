@@ -11,7 +11,14 @@
 | 2 | `2026-07-13-plan-2-engine-would-you-rather.md` | Round engine + Would You Rather end-to-end + Playwright e2e | plan 1 |
 | 3 | `2026-07-13-plan-3-remaining-games.md` | Most Likely To, Never Have I Ever, Who Said That | plan 2 |
 | 4 | `2026-07-13-plan-4-auth-custom-packs.md` | Google sign-in, Postgres, custom question packs | plan 2 (3 recommended) |
-| 5 | `2026-07-13-plan-5-launch.md` | CI, deploy, landing/SEO pages, PostHog analytics, QR codes, content expansion | all prior |
+| 5 | `2026-07-13-plan-5-launch.md` | CI, deploy, landing/SEO pages, PostHog analytics, QR codes, content expansion | plans 1–4 |
+| 6 | `2026-07-13-plan-6-imposter.md` | Imposter — hidden word, spoken clues, vote | plan 3 |
+| 7 | `2026-07-13-plan-7-bluff-battle.md` | Bluff Battle — fake answers, truth-finding, fooling points | plan 3 |
+| 8 | `2026-07-13-plan-8-mafia.md` | Mafia — roles, night/day, eliminations, win conditions | plan 3 (do last) |
+
+Plans 6–8 depend only on plan 3 and can run before or after plans 4–5. Recommended: launch (plan 5) with the first four games, then ship 6–8 as updates — CI + deploy make each new game a push away. Mafia stays last per the spec: it's the hardest to verify.
+
+The full 7-game catalog is covered: Would You Rather, Most Likely To, Never Have I Ever, Who Said That (plans 2–3), Imposter (6), Bluff Battle (7), Mafia (8). Still deferred post-catalog: payments/premium split, extra modes per game, localization.
 
 ## How to execute a plan (one fresh window per plan)
 
