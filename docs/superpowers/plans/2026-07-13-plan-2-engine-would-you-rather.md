@@ -100,6 +100,8 @@ export interface TimedState {
 export interface GameDefinition<State extends TimedState, Settings, Prompt> {
   id: GameId
   minPlayers: number
+  /** Per-game cap; when set, startGame rejects larger lobbies (the room-wide entitlement cap still applies). */
+  maxPlayers?: number
   defaultSettings: Settings
   init(args: { players: GamePlayer[]; prompts: Prompt[]; settings: Settings; now: number }): State
   reducer(state: State, action: GameAction): State
@@ -895,6 +897,9 @@ Add methods to `RoomManager` (and replace `toView` with the two personalized bui
     if (room.game) return { error: 'Game already running' }
     if (room.players.length < definition.minPlayers) {
       return { error: `Need at least ${definition.minPlayers} players` }
+    }
+    if (definition.maxPlayers !== undefined && room.players.length > definition.maxPlayers) {
+      return { error: `This game supports at most ${definition.maxPlayers} players` }
     }
     room.lastActivityAt = this.now()
     const players = room.players.map(({ id, nickname, connected }) => ({ id, nickname, connected }))

@@ -432,15 +432,104 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 - [ ] **Step 4: Integration test** — append to `server.test.ts`: stub the fetch (`vi.stubGlobal('fetch', ...)`) to return a minimal WYR pack and assert `game:start` with `customPackId` starts the game with the stubbed prompts (host view shows the custom prompt text).
 
-- [ ] **Step 5: Verify all, lint, commit, tag**
+- [ ] **Step 5: Verify all, lint, commit** (tag moves to Task 7)
 
 ```bash
 pnpm test && pnpm --filter @hpg/web build && pnpm lint
 git add -A && git commit -m "feat: start games with custom packs"
-git tag plan-4-auth-custom-packs
 ```
 
 Manual: sign in → create pack → host a room → pick your pack → play a round with your own prompts → confirm anonymous hosts still work end-to-end signed out.
+
+---
+
+### Task 7: Entitlements scaffolding (TDD)
+
+Everything stays free in v1, but capability checks exist from day one so introducing paid plans later changes *data*, never game logic. **Rule (enforce in review): outside `entitlements.ts`, code never branches on a plan id — only on capabilities.**
+
+**Files:**
+- Create: `packages/shared/src/entitlements.ts`
+- Test: `packages/shared/src/entitlements.test.ts`
+- Modify: `packages/shared/src/index.ts`, `apps/game-server/src/roomManager.ts`, `apps/web/src/app/api/packs/route.ts`
+
+- [ ] **Step 1: Failing test**
+
+`packages/shared/src/entitlements.test.ts`:
+```ts
+import { describe, expect, it } from 'vitest'
+import { entitlementsFor, PLAN_ENTITLEMENTS } from './entitlements'
+
+describe('entitlements', () => {
+  it('defaults unknown/absent plans to FREE', () => {
+    expect(entitlementsFor(null)).toEqual(PLAN_ENTITLEMENTS.FREE)
+    expect(entitlementsFor(undefined)).toEqual(PLAN_ENTITLEMENTS.FREE)
+  })
+
+  it('every plan defines every capability (no partial plans)', () => {
+    const keys = Object.keys(PLAN_ENTITLEMENTS.FREE).sort()
+    for (const plan of Object.values(PLAN_ENTITLEMENTS)) {
+      expect(Object.keys(plan).sort()).toEqual(keys)
+    }
+  })
+
+  it('beta policy: FREE grants full access with a 20-player cap', () => {
+    const free = entitlementsFor('FREE')
+    expect(free.maxPlayers).toBe(20)
+    expect(free.canUseCustomPacks).toBe(true)
+  })
+})
+```
+
+- [ ] **Step 2: Run FAIL, then implement**
+
+`packages/shared/src/entitlements.ts`:
+```ts
+/**
+ * Plans are DATA; game logic only ever reads capabilities. When pricing
+ * launches, this table changes — nothing else does. (During the free beta,
+ * FREE grants everything so no feature is gated in practice.)
+ */
+export type PlanId = 'FREE' | 'PARTY_PASS' | 'PLUS' | 'EVENT' | 'ADMIN'
+
+export interface Entitlements {
+  maxPlayers: number
+  canUseCustomPacks: boolean
+  canUsePremiumPacks: boolean
+  canSaveHistory: boolean
+  adFree: boolean
+}
+
+export const PLAN_ENTITLEMENTS: Record<PlanId, Entitlements> = {
+  // Beta values: FREE = everything. Tighten via this table when pricing launches.
+  FREE: { maxPlayers: 20, canUseCustomPacks: true, canUsePremiumPacks: true, canSaveHistory: false, adFree: true },
+  PARTY_PASS: { maxPlayers: 20, canUseCustomPacks: true, canUsePremiumPacks: true, canSaveHistory: false, adFree: true },
+  PLUS: { maxPlayers: 20, canUseCustomPacks: true, canUsePremiumPacks: true, canSaveHistory: true, adFree: true },
+  EVENT: { maxPlayers: 20, canUseCustomPacks: true, canUsePremiumPacks: true, canSaveHistory: true, adFree: true },
+  ADMIN: { maxPlayers: 20, canUseCustomPacks: true, canUsePremiumPacks: true, canSaveHistory: true, adFree: true },
+}
+
+/** Capability lookup; absent/unknown plans resolve to FREE. */
+export function entitlementsFor(plan: PlanId | string | null | undefined): Entitlements {
+  return PLAN_ENTITLEMENTS[(plan as PlanId) ?? 'FREE'] ?? PLAN_ENTITLEMENTS.FREE
+}
+```
+
+Export from `packages/shared/src/index.ts`.
+
+- [ ] **Step 3: Wire the two existing gates through capabilities**
+
+- `apps/game-server/src/roomManager.ts`: delete the `MAX_PLAYERS = 20` constant; `createRoom()` sets `room.maxPlayers = entitlementsFor('FREE').maxPlayers` (host plan lookup arrives with payments) and `join()` checks `room.players.length >= room.maxPlayers`. Update the `Room` interface and the "Room full" test to construct via the manager (behavior unchanged at 20).
+- `apps/web/src/app/api/packs/route.ts` POST: after the session check, add
+  `if (!entitlementsFor('FREE').canUseCustomPacks) return NextResponse.json({ error: 'Not available on your plan' }, { status: 403 })`
+  — a no-op today, but the seam exists where payments will need it.
+
+- [ ] **Step 4: PASS all, lint, commit, tag**
+
+```bash
+pnpm test && pnpm lint
+git add -A && git commit -m "feat: entitlements scaffolding — capability checks, plans as data"
+git tag plan-4-auth-custom-packs
+```
 
 ---
 

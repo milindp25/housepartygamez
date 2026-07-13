@@ -136,6 +136,32 @@ DB tables (v1): `users`, `sessions`/`accounts` (Auth.js), `custom_packs`.
 - Rooms auto-expire after ~1h of inactivity.
 - Room codes: 4 letters from an unambiguous alphabet (no O/0, I/1 lookalikes).
 
+## Product & pricing posture (reviewed 2026-07-13 against the cost-first architecture memo)
+
+- **Launch completely free:** all 7 games, guest access, private rooms, no ads, no payment
+  info, no mandatory registration. Measure (via PostHog) which games get picked, session
+  length, drop-off points, and return rates before charging anything.
+- **Entitlements as data from day one** (plan 4): a `PlanId → Entitlements` capability
+  table (`maxPlayers`, `canUseCustomPacks`, `canUsePremiumPacks`, `canSaveHistory`,
+  `adFree`). Hard rule: outside `entitlements.ts`, code never branches on a plan id —
+  only on capabilities. Introducing Party Pass / Plus later changes the table, not logic.
+  During the beta, FREE grants everything with a 20-player cap.
+- **Candidate future tiers** (not built; the entitlement keys anticipate them):
+  free (6-player cap, standard packs), Party Pass (~$4.99/24h: 20 players, premium +
+  custom packs), Plus (~$5.99/mo: history, saved packs, early access).
+- **Guest identity:** opaque random `playerToken` (localStorage), validated by server-side
+  seat lookup — equivalent in security to a signed token for our server-authoritative
+  model, with less machinery. Revisit (signed JWTs) only if room state ever moves to
+  infrastructure that must validate tokens without shared memory.
+- **Infra cost decision (reaffirmed):** Vercel + Railway + Neon (~$5/mo for Railway — the
+  price of a game server with no cold starts). A $0 Cloudflare Durable Objects migration
+  remains open at any time because the engine is pure TS with no server dependencies.
+- **Room lifecycle:** empty lobbies expire after 30 min; active/finished rooms after 1h
+  idle. Only durable data (accounts, packs) touches Postgres.
+- **Deferred, noted for later milestones:** anonymous end-of-game summary rows in Postgres
+  (feeds the Plus "game history" feature), player avatars, an instructions phase before
+  round 1, moderation/report tables, sponsored screens.
+
 ## Engineering standards
 
 - **TypeScript strict mode** everywhere; no `any` unless annotated with a reason.

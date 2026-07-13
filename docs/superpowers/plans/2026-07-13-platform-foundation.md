@@ -452,6 +452,15 @@ describe('RoomManager', () => {
     clock.now += 59 * 60_000
     expect(rooms.sweepExpired(60 * 60_000)).toEqual([])
   })
+
+  it('empty lobbies expire on the shorter limit', () => {
+    const empty = rooms.createRoom()
+    const joined = rooms.createRoom()
+    rooms.join(joined.code, 'Milind', 'tok-1')
+    clock.now += 31 * 60_000
+    expect(rooms.sweepExpired(60 * 60_000, 30 * 60_000)).toEqual([empty.code])
+    expect(rooms.getRoom(joined.code)).toBeDefined()
+  })
 })
 ```
 
@@ -545,10 +554,12 @@ export class RoomManager {
     return room
   }
 
-  sweepExpired(maxIdleMs: number): string[] {
+  /** Empty lobbies get a shorter leash (`emptyIdleMs`) than rooms someone actually joined. */
+  sweepExpired(maxIdleMs: number, emptyIdleMs: number = maxIdleMs): string[] {
     const expired: string[] = []
     for (const [code, room] of this.rooms) {
-      if (this.now() - room.lastActivityAt > maxIdleMs) {
+      const limit = room.players.length === 0 ? emptyIdleMs : maxIdleMs
+      if (this.now() - room.lastActivityAt > limit) {
         this.rooms.delete(code)
         expired.push(code)
       }
@@ -569,7 +580,7 @@ export class RoomManager {
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `pnpm --filter @hpg/game-server test`
-Expected: 8 tests PASS.
+Expected: 9 tests PASS.
 
 - [ ] **Step 6: Commit**
 
@@ -817,6 +828,8 @@ import { attachGameServer } from './server'
 
 /** Rooms idle longer than this are deleted; any join/disconnect resets the clock. */
 const ROOM_IDLE_MS = 60 * 60_000
+/** Lobbies nobody ever joined die sooner — they're usually abandoned create-clicks. */
+const EMPTY_LOBBY_IDLE_MS = 30 * 60_000
 const SWEEP_INTERVAL_MS = 60_000
 const port = Number(process.env.PORT ?? 4000)
 
@@ -824,7 +837,7 @@ const httpServer = createServer()
 const { io, rooms } = attachGameServer(httpServer)
 
 setInterval(() => {
-  const expired = rooms.sweepExpired(ROOM_IDLE_MS)
+  const expired = rooms.sweepExpired(ROOM_IDLE_MS, EMPTY_LOBBY_IDLE_MS)
   if (expired.length === 0) return
   logger.info({ event: 'rooms_expired', roomCodes: expired })
   for (const code of expired) {
@@ -840,7 +853,7 @@ httpServer.listen(port, () => {
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `pnpm --filter @hpg/game-server test`
-Expected: all tests PASS (8 unit + 4 integration), with no log noise (test level is silent).
+Expected: all tests PASS (9 unit + 4 integration), with no log noise (test level is silent).
 
 - [ ] **Step 6: Lint and commit**
 
