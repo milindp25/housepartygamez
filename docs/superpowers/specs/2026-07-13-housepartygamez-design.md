@@ -136,6 +136,30 @@ DB tables (v1): `users`, `sessions`/`accounts` (Auth.js), `custom_packs`.
 - Rooms auto-expire after ~1h of inactivity.
 - Room codes: 4 letters from an unambiguous alphabet (no O/0, I/1 lookalikes).
 
+## Engineering standards
+
+- **TypeScript strict mode** everywhere; no `any` unless annotated with a reason.
+- **Linting & formatting enforced by tooling**, not convention: ESLint (typescript-eslint
+  recommended + Next.js config in the web app) and Prettier, run via `pnpm lint` /
+  `pnpm format` and required to pass before commit.
+- **Comments:** every exported function, class, and type carries a JSDoc block stating its
+  purpose and any non-obvious behavior. Inline comments explain *why* (constraints,
+  gotchas, protocol decisions), not *what* the next line does. Code should be readable by
+  an engineer new to the repo.
+- **Structured JSON logging** with **pino** on the game server (and web server-side code):
+  one JSON object per line so any log aggregator (Railway, Datadog, Loki, CloudWatch) can
+  index and search fields directly. Conventions:
+  - every entry has an `event` name (`room_created`, `player_joined`, `join_rejected`, …)
+    plus context fields (`roomCode`, `playerId`, `socketId`);
+  - levels: `info` for lifecycle, `warn` for rejected/invalid client actions, `error` for
+    exceptions;
+  - dev uses pino-pretty for human-readable output; production stays raw JSON; tests are silent.
+- **Analytics / click tracking:** **PostHog** on the web app (plan 5). Autocapture records
+  every click/pageview without manual wiring; explicit funnel events (`room_created`,
+  `player_joined`, `game_started`, `round_completed`) mirror the server log event names so
+  product analytics and server logs correlate. Free tier ~1M events/month, EU hosting
+  available, adds session replay + feature flags/A-B tests when we need them.
+
 ## Testing
 
 - **Unit (Vitest):** reducers + view functions for every game — the bulk of all tests

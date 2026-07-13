@@ -6,7 +6,9 @@
 
 **Architecture:** pnpm-workspace monorepo. `packages/shared` holds the socket protocol types and room-code generator (pure TS, imported as source by both apps). `apps/game-server` is a Node + Socket.IO server holding all room state in memory via a pure, unit-testable `RoomManager` class. `apps/web` is a Next.js App Router app with a `/host` page (TV) and `/join` page (phones), both dumb renderers of server-sent `room:state` views.
 
-**Tech Stack:** TypeScript, pnpm workspaces, Socket.IO v4 (+ socket.io-client), Next.js 15 (App Router, Tailwind), Vitest, tsx (server dev runner). Node 20+.
+**Tech Stack:** TypeScript (strict), pnpm workspaces, Socket.IO v4 (+ socket.io-client), Next.js 15 (App Router, Tailwind), Vitest, tsx (server dev runner), ESLint + Prettier (enforced), pino structured JSON logging. Node 20+.
+
+**Standards (apply to every task):** JSDoc on every exported function/class/type; inline comments explain *why*, not *what*. All game-server events logged as structured JSON via pino with an `event` name + context fields (`roomCode`, `playerId`, `socketId`). `pnpm lint` must pass before each commit.
 
 **Spec:** `docs/superpowers/specs/2026-07-13-housepartygamez-design.md`
 
@@ -21,6 +23,8 @@ housepartygamez/
 ├── package.json                     # root: workspace scripts only
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json               # shared compiler options
+├── eslint.config.js                 # typescript-eslint for packages + game-server
+├── .prettierrc / .prettierignore
 ├── .gitignore
 ├── packages/shared/
 │   ├── package.json                 # name @hpg/shared, exports TS source
@@ -35,6 +39,7 @@ housepartygamez/
     │   ├── package.json             # name @hpg/game-server
     │   ├── tsconfig.json
     │   └── src/
+    │       ├── logger.ts            # pino structured JSON logger (shared conventions)
     │       ├── roomManager.ts       # ALL room rules, pure class (no sockets, no timers)
     │       ├── roomManager.test.ts
     │       ├── server.ts            # attachGameServer(): socket wiring only, no rules
@@ -53,10 +58,11 @@ Responsibilities: `RoomManager` owns every room rule (join validation, reconnect
 
 ---
 
-### Task 1: Monorepo scaffold
+### Task 1: Monorepo scaffold + lint/format tooling
 
 **Files:**
 - Create: `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `.gitignore`
+- Create: `eslint.config.js`, `.prettierrc`, `.prettierignore`
 
 - [ ] **Step 1: Create root files**
 
@@ -65,10 +71,18 @@ Responsibilities: `RoomManager` owns every room rule (join validation, reconnect
 {
   "name": "housepartygamez",
   "private": true,
+  "type": "module",
   "scripts": {
     "test": "pnpm -r test",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
     "dev:server": "pnpm --filter @hpg/game-server dev",
     "dev:web": "pnpm --filter @hpg/web dev"
+  },
+  "devDependencies": {
+    "eslint": "^9.18.0",
+    "prettier": "^3.4.0",
+    "typescript-eslint": "^8.20.0"
   },
   "packageManager": "pnpm@9.15.0"
 }
@@ -106,16 +120,41 @@ dist/
 .env*.local
 ```
 
-- [ ] **Step 2: Verify pnpm resolves the workspace**
+- [ ] **Step 2: Create lint and format config**
 
-Run: `pnpm install`
-Expected: completes without error (no packages yet, that's fine).
+`eslint.config.js` (flat config; the web app keeps its own Next.js ESLint setup, so it's excluded here):
+```js
+import tseslint from 'typescript-eslint'
 
-- [ ] **Step 3: Commit**
+export default tseslint.config(
+  { ignores: ['**/node_modules/**', '**/.next/**', '**/dist/**', 'apps/web/**'] },
+  ...tseslint.configs.recommended,
+)
+```
+
+`.prettierrc`:
+```json
+{ "semi": false, "singleQuote": true, "printWidth": 100 }
+```
+
+`.prettierignore`:
+```
+node_modules/
+.next/
+dist/
+pnpm-lock.yaml
+```
+
+- [ ] **Step 3: Verify pnpm resolves the workspace and lint runs clean**
+
+Run: `pnpm install && pnpm lint`
+Expected: install completes; eslint and prettier exit 0 (nothing to lint yet is fine).
+
+- [ ] **Step 4: Commit**
 
 ```bash
-git add package.json pnpm-workspace.yaml tsconfig.base.json .gitignore
-git commit -m "chore: scaffold pnpm workspace monorepo"
+git add package.json pnpm-workspace.yaml tsconfig.base.json .gitignore eslint.config.js .prettierrc .prettierignore pnpm-lock.yaml
+git commit -m "chore: scaffold pnpm workspace monorepo with lint/format tooling"
 ```
 
 ---
@@ -307,9 +346,11 @@ git commit -m "feat: socket protocol types for room lifecycle"
   },
   "dependencies": {
     "@hpg/shared": "workspace:*",
+    "pino": "^9.6.0",
     "socket.io": "^4.8.0"
   },
   "devDependencies": {
+    "pino-pretty": "^13.0.0",
     "socket.io-client": "^4.8.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
@@ -539,10 +580,10 @@ git commit -m "feat: RoomManager with join, reconnect, and expiry rules"
 
 ---
 
-### Task 5: Socket.IO wiring + integration test
+### Task 5: Socket.IO wiring + structured logging + integration test
 
 **Files:**
-- Create: `apps/game-server/src/server.ts`, `apps/game-server/src/index.ts`
+- Create: `apps/game-server/src/logger.ts`, `apps/game-server/src/server.ts`, `apps/game-server/src/index.ts`
 - Test: `apps/game-server/src/server.test.ts`
 
 - [ ] **Step 1: Write the failing integration test**
@@ -657,20 +698,52 @@ describe('game server sockets', () => {
 Run: `pnpm --filter @hpg/game-server test`
 Expected: server.test.ts FAILS — cannot resolve `./server`. (roomManager tests still pass.)
 
-- [ ] **Step 3: Implement the socket wiring**
+- [ ] **Step 3: Create the structured logger**
+
+`apps/game-server/src/logger.ts`:
+```ts
+import { pino } from 'pino'
+
+/**
+ * Structured JSON logger — one JSON object per line so log aggregators
+ * (Railway, Datadog, Loki, CloudWatch) can index and search fields directly.
+ *
+ * Conventions:
+ * - every entry carries an `event` name (snake_case) plus context fields
+ *   such as `roomCode`, `playerId`, `socketId`
+ * - `info` = lifecycle, `warn` = rejected/invalid client actions, `error` = exceptions
+ * - production emits raw JSON; dev pretty-prints; tests are silent
+ */
+export const logger = pino({
+  level: process.env.LOG_LEVEL ?? (process.env.NODE_ENV === 'test' ? 'silent' : 'info'),
+  transport:
+    process.env.NODE_ENV === 'production' ? undefined : { target: 'pino-pretty' },
+})
+```
+
+- [ ] **Step 4: Implement the socket wiring**
 
 `apps/game-server/src/server.ts`:
 ```ts
 import type { Server as HttpServer } from 'node:http'
 import { Server } from 'socket.io'
 import type { ClientToServerEvents, ServerToClientEvents } from '@hpg/shared'
+import { logger } from './logger'
 import { RoomManager } from './roomManager'
 
+/** Per-connection bookkeeping so `disconnect` knows which seat to release. */
 interface SocketData {
   roomCode?: string
   playerToken?: string
 }
 
+/**
+ * Attaches the Socket.IO game server to an HTTP server.
+ *
+ * This layer only translates socket events into RoomManager calls and
+ * broadcasts the resulting views — all room *rules* live in RoomManager,
+ * which keeps them unit-testable without sockets.
+ */
 export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager()) {
   const io = new Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>(
     httpServer,
@@ -678,27 +751,45 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
   )
 
   io.on('connection', (socket) => {
+    // Child logger: every line for this connection is traceable by socketId.
+    const log = logger.child({ socketId: socket.id })
+    log.info({ event: 'socket_connected' })
+
     socket.on('room:create', (ack) => {
       const room = rooms.createRoom()
       socket.data.roomCode = room.code
       void socket.join(room.code)
+      log.info({ event: 'room_created', roomCode: room.code })
       ack({ code: room.code })
     })
 
     socket.on('room:watch', ({ code }, ack) => {
       const room = rooms.getRoom(code)
-      if (!room) return ack({ ok: false, error: 'Room not found' })
+      if (!room) {
+        log.warn({ event: 'watch_rejected', roomCode: code, reason: 'Room not found' })
+        return ack({ ok: false, error: 'Room not found' })
+      }
       socket.data.roomCode = room.code
       void socket.join(room.code)
+      log.info({ event: 'room_watched', roomCode: room.code })
       ack({ ok: true, view: rooms.toView(room) })
     })
 
     socket.on('room:join', ({ code, nickname, playerToken }, ack) => {
       const result = rooms.join(code, nickname, playerToken)
-      if ('error' in result) return ack({ ok: false, error: result.error })
+      if ('error' in result) {
+        log.warn({ event: 'join_rejected', roomCode: code, reason: result.error })
+        return ack({ ok: false, error: result.error })
+      }
       socket.data.roomCode = result.room.code
       socket.data.playerToken = playerToken
       void socket.join(result.room.code)
+      log.info({
+        event: 'player_joined',
+        roomCode: result.room.code,
+        playerId: result.player.id,
+        nickname: result.player.nickname,
+      })
       ack({ ok: true, playerId: result.player.id, view: rooms.toView(result.room) })
       io.to(result.room.code).emit('room:state', rooms.toView(result.room))
     })
@@ -707,7 +798,10 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
       const { roomCode, playerToken } = socket.data
       if (!roomCode || !playerToken) return
       const room = rooms.setConnected(roomCode, playerToken, false)
-      if (room) io.to(roomCode).emit('room:state', rooms.toView(room))
+      if (!room) return
+      const player = room.players.find((p) => p.token === playerToken)
+      log.info({ event: 'player_disconnected', roomCode, playerId: player?.id })
+      io.to(roomCode).emit('room:state', rooms.toView(room))
     })
   })
 
@@ -718,8 +812,10 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
 `apps/game-server/src/index.ts`:
 ```ts
 import { createServer } from 'node:http'
+import { logger } from './logger'
 import { attachGameServer } from './server'
 
+/** Rooms idle longer than this are deleted; any join/disconnect resets the clock. */
 const ROOM_IDLE_MS = 60 * 60_000
 const SWEEP_INTERVAL_MS = 60_000
 const port = Number(process.env.PORT ?? 4000)
@@ -728,26 +824,30 @@ const httpServer = createServer()
 const { io, rooms } = attachGameServer(httpServer)
 
 setInterval(() => {
-  for (const code of rooms.sweepExpired(ROOM_IDLE_MS)) {
+  const expired = rooms.sweepExpired(ROOM_IDLE_MS)
+  if (expired.length === 0) return
+  logger.info({ event: 'rooms_expired', roomCodes: expired })
+  for (const code of expired) {
     io.in(code).disconnectSockets()
   }
 }, SWEEP_INTERVAL_MS)
 
 httpServer.listen(port, () => {
-  console.log(`game-server listening on :${port}`)
+  logger.info({ event: 'server_started', port })
 })
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [ ] **Step 5: Run tests to verify they pass**
 
 Run: `pnpm --filter @hpg/game-server test`
-Expected: all tests PASS (8 unit + 4 integration).
+Expected: all tests PASS (8 unit + 4 integration), with no log noise (test level is silent).
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Lint and commit**
 
 ```bash
+pnpm lint
 git add apps/game-server/src
-git commit -m "feat: socket.io server with room lifecycle and expiry sweep"
+git commit -m "feat: socket.io server with room lifecycle, JSON logging, expiry sweep"
 ```
 
 ---
@@ -1064,6 +1164,6 @@ git tag plan-1-platform-foundation
 
 ## Self-review notes
 
-- **Spec coverage (plan-1 slice):** room create/join/watch ✓, 4-letter safe-alphabet codes ✓, reconnect via localStorage token ✓, host screen stateless/reopenable (`room:watch`) ✓, 1h idle expiry ✓, in-memory only ✓, unit + socket integration tests ✓. Deferred to later plans per spec: engine/games, timers advancing gameplay, auth, content packs, QR code on host screen, Playwright e2e (arrives with the first full game in plan 2).
+- **Spec coverage (plan-1 slice):** room create/join/watch ✓, 4-letter safe-alphabet codes ✓, reconnect via localStorage token ✓, host screen stateless/reopenable (`room:watch`) ✓, 1h idle expiry ✓, in-memory only ✓, unit + socket integration tests ✓, ESLint/Prettier tooling ✓, pino structured JSON logging with event conventions ✓. Deferred to later plans per spec: engine/games, timers advancing gameplay, auth, content packs, QR code on host screen, PostHog analytics (plan 5), Playwright e2e (arrives with the first full game in plan 2).
 - **Types:** `RoomView`/`JoinResult`/`WatchResult` defined once in Task 3 and imported everywhere; `RoomManager` method names consistent across Tasks 4–5.
 - **No placeholders:** every code step contains the complete file.
