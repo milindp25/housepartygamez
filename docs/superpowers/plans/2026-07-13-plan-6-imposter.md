@@ -35,7 +35,7 @@ Scoring: each player who voted for the imposter +1; the imposter +2 if they are 
 
 **Files:** `packages/shared/src/games/imposter.ts` + `.test.ts`; register export in `packages/shared/src/index.ts`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 `packages/shared/src/games/imposter.test.ts`:
 ```ts
@@ -166,7 +166,7 @@ describe('imposter', () => {
 
 Fix the "caught" test expectation while implementing: caught means the imposter is the **strict** top vote-getter. Construct the caught case as 3 votes on the imposter (others[0..2]) + imposter votes anywhere → imposter has 3, max other has 1 → caught; assert the three correct voters score 1 each and imposter scores 0. Keep the escaped case as written (imposter received 1 vote, a civilian received 3).
 
-- [ ] **Step 2: Run FAIL, then implement**
+- [x] **Step 2: Run FAIL, then implement**
 
 `packages/shared/src/games/imposter.ts`:
 ```ts
@@ -545,13 +545,13 @@ export const imposter: GameDefinition<ImposterState, ImposterSettings, ImposterP
 
 **Also:** add `'imposter'` to the `GameId` union in `packages/shared/src/engine/types.ts` (and games 7–8's ids while there: `'bluff-battle'`, `'mafia'` — one edit instead of three).
 
-- [ ] **Step 3: PASS, lint, commit** — `git commit -m "feat: imposter game definition with hidden word and hash-seeded selection"`
+- [x] **Step 3: PASS, lint, commit** — `git commit -m "feat: imposter game definition with hidden word and hash-seeded selection"`
 
 ---
 
 ### Task 2: Content + UI + registration
 
-- [ ] **Step 1: Word packs** — `packages/content/src/imposter.ts`, `ContentPack<ImposterPrompt>` ×3 (`imposter-family-v1` etc., ids `imp-fam-N`…):
+- [x] **Step 1: Word packs** — `packages/content/src/imposter.ts`, `ContentPack<ImposterPrompt>` ×3 (`imposter-family-v1` etc., ids `imp-fam-N`…):
 
 ```ts
 // family (word / category): Banana/Fruit, Giraffe/Animal, Pizza/Food, Guitar/Instrument,
@@ -565,14 +565,14 @@ export const imposter: GameDefinition<ImposterState, ImposterSettings, ImposterP
 ```
 Register under `'imposter'` in `packages/content/src/index.ts`.
 
-- [ ] **Step 2: Components** — follow `MltHost`/`MltPlay` structure and classes:
+- [x] **Step 2: Components** — follow `MltHost`/`MltPlay` structure and classes:
   - `ImposterPlay.tsx`: **word** — full-screen card: non-imposter sees "The word is **{word}** — don't say it!", imposter sees "🕵️ You are the IMPOSTER{hint && ` — category: ${hint}`}. Blend in."; "Got it" button → `input({ ready: true })`. **clues** — persistent small banner with your word/imposter status + "🎤 {currentSpeaker} is giving a clue" (or "Your turn — say one clue out loud"). **vote** — candidate buttons → `input({ suspectId })`. **reveal** — imposter name + word + caught/escaped banner + leaderboard. **finished** — leaderboard.
   - `ImposterHost.tsx`: **word** — "Check your phones! {readyCount}/{totalPlayers} ready" (+ advance button). **clues** — speaking order list with the current speaker highlighted, Countdown, "Next speaker" button (`onAdvance`). **vote** — "{votedCount}/{totalPlayers} voted" + Countdown. **reveal** — big "The imposter was {imposterNickname}!" + word + tally + caught/escaped + Next. **finished** — leaderboard + Back to lobby.
   - The host page's word phase and clues use `onAdvance` — already wired generically.
 
-- [ ] **Step 3: Register** — server `definitions` map, `GameHost`/`GamePlay` switches, host page `GAMES` list (`{ id: 'imposter', name: 'Imposter' }`).
+- [x] **Step 3: Register** — server `definitions` map, `GameHost`/`GamePlay` switches, host page `GAMES` list (`{ id: 'imposter', name: 'Imposter' }`).
 
-- [ ] **Step 4: Verify + tag**
+- [x] **Step 4: Verify + tag**
 
 ```bash
 pnpm test && pnpm --filter @hpg/web build && pnpm lint
@@ -589,3 +589,14 @@ git tag plan-6-imposter
 
 - **Spec coverage:** Classic + Category-hint modes as one `hint` setting ✓; per-player secret enforced in `playerView` (server-side) ✓; clue round facilitated, spoken aloud ✓; 4+ players ✓. Deferred modes per spec: Two Imposters, Related Word, Team/No-Talking/Quick (settings work later).
 - **Purity:** imposter selection and speaking order derive from `hash(playerId + seed + round)` with `seed = init now` — pure, reproducible in tests, unpredictable at the table.
+
+---
+
+## Deviations (recorded during execution)
+
+Executor: direct-implementation session on 2026-07-14, continuing from plan 3's environment. Plan 6 was implemented BACK-TO-BACK with plan 3 because plan 6 modifies plan 3's `GameHost`/`GamePlay` switches and depends on the game-dispatch refactor — true git-parallel branches would conflict at those merge points.
+
+- **"Caught" test scoring case reshaped as the plan's Step 2 note directed.** The test snippet's original three-vote arrangement (2 imposter, 1 civilian) is a tie, not a strict plurality caught. Rewrote to 3 votes on imposter vs 1 elsewhere and asserted `scores[all three correct voters] === 1` and `scores[imposter] === 0`. Behavior + spec unchanged.
+- **`GameId` union pre-declared all three plan 6-8 games** as the plan directed, so plans 7/8 will not need to widen it.
+- **Anti-cheat proven at the wire level.** In addition to the plan's manual devtools check, a socket-level probe against the live server confirmed for real player sockets: exactly one imposter, imposter's `room:state` has `word === undefined` and a category `hint`, all civilians receive the same word with no hint. Also verified caught scoring end-to-end. Deleted the probe after use (it was a verification script, not a keeper).
+- No wire-shape, error-string, or event-name changes vs the plan.
