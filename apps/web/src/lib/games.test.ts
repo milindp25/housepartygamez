@@ -17,7 +17,19 @@ describe('marketing game registry', () => {
   })
 
   it('looks up known slugs and returns undefined for unknown slugs', () => {
-    expect(getMarketingGame('bluff-battle')?.id).toBe('bluff-battle')
+    const expectedLookups = [
+      ['would-you-rather', 'would-you-rather'],
+      ['most-likely-to', 'most-likely-to'],
+      ['never-have-i-ever', 'never-have-i-ever'],
+      ['who-said-that', 'who-said-that'],
+      ['imposter', 'imposter'],
+      ['bluff-battle', 'bluff-battle'],
+      ['mafia', 'mafia'],
+    ] as const
+
+    for (const [slug, expectedId] of expectedLookups) {
+      expect(getMarketingGame(slug)?.id).toBe(expectedId)
+    }
     expect(getMarketingGame('not-a-game')).toBeUndefined()
   })
 })
