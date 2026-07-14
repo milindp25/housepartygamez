@@ -8,3 +8,5 @@ apps/web/test-results/
 apps/web/playwright-report/
 # macOS Finder metadata.
 .DS_Store
+# Local isolated worktrees used for plan implementation.
+.worktrees/
