@@ -160,11 +160,11 @@ git commit -m "feat: add seven-game marketing registry"
 - Consumes: `MARKETING_GAMES` and `getMarketingGame` from Task 1.
 - Produces: `/`, seven static `/games/:slug` pages, and 404 behavior for other slugs.
 
-- [ ] **Step 1: Add a failing browser test for absent marketing UI**
+- [x] **Step 1: Add a failing browser test for absent marketing UI**
 
 Create `apps/web/e2e/marketing.spec.ts` with initial assertions for the approved headline, seven card links, and one detail route. Run it before replacing the starter page and observe failure.
 
-- [ ] **Step 2: Replace the product metadata**
+- [x] **Step 2: Replace the product metadata**
 
 In `layout.tsx`, keep the existing Geist setup and export:
 
@@ -178,7 +178,7 @@ export const metadata: Metadata = {
 }
 ```
 
-- [ ] **Step 3: Build the landing page**
+- [x] **Step 3: Build the landing page**
 
 The server component must render, in order:
 
@@ -190,7 +190,7 @@ three real ordered steps → seven registry-driven game cards → closing CTA �
 
 Use semantic `header`, `main`, `section`, `ol`, `article`, and `footer` elements. The primary CTA text is `Host a game`; the secondary is `Join a room`. Each game card links to `/games/${game.slug}` and exposes its player range and `${minutes} min` in monospaced metadata.
 
-- [ ] **Step 4: Build the static detail route**
+- [x] **Step 4: Build the static detail route**
 
 Use the Next.js 16 signatures exactly:
 
@@ -219,11 +219,11 @@ export default async function GamePage({ params }: Props) {
 }
 ```
 
-- [ ] **Step 5: Implement the visual system in `globals.css`**
+- [x] **Step 5: Implement the visual system in `globals.css`**
 
 Define the seven approved color variables, `color-scheme: dark`, a midnight radial stage-light background, visible `:focus-visible`, responsive `.marketing-shell`, `.hero-grid`, `.room-code-marquee`, `.game-grid`, and `.game-card` classes. At 720 px collapse the hero and game grids; at 360 px reduce marquee gap/tile padding. All animated transforms must be inside `@media (prefers-reduced-motion: no-preference)`.
 
-- [ ] **Step 6: Run browser GREEN, build, and lint**
+- [x] **Step 6: Run browser GREEN, build, and lint**
 
 Run:
 
@@ -235,7 +235,7 @@ pnpm lint
 
 Expected: marketing test passes, build lists `/` plus seven static `/games/*` routes, lint/format clean.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/web/src/app/page.tsx apps/web/src/app/games apps/web/src/app/globals.css apps/web/src/app/layout.tsx apps/web/e2e/marketing.spec.ts
