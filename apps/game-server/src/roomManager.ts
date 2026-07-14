@@ -103,7 +103,7 @@ export class RoomManager {
    *
    * @param code - The room code, in any case.
    * @param nickname - Desired display name (trimmed); ignored on reconnect.
-   * @param token - Stable per-client secret identifying the seat.
+   * @param token - Non-empty stable per-client secret identifying the seat.
    * @returns The room and the seated player, or an `{ error }` describing why the
    *   join was rejected.
    */
@@ -114,6 +114,7 @@ export class RoomManager {
   ): { room: Room; player: RoomPlayer } | { error: string } {
     const room = this.getRoom(code)
     if (!room) return { error: 'Room not found' }
+    if (typeof token !== 'string' || !token.trim()) return { error: 'Player token required' }
 
     const existing = room.players.find((p) => p.token === token)
     if (existing) {

@@ -42,6 +42,36 @@ describe('RoomManager', () => {
     expect(rooms.join(room.code, 'milind', 'tok-2')).toEqual({ error: 'Nickname taken' })
   })
 
+  it('rejects malformed player tokens without mutating lobby seats or activity', () => {
+    const room = rooms.createRoom()
+    const activityBefore = room.lastActivityAt
+    clock.now += 1_000
+    const invalidTokens: unknown[] = [undefined, '', '   ', 42]
+    for (const [index, token] of invalidTokens.entries()) {
+      expect(rooms.join(room.code, `Invalid ${index}`, token as string)).toEqual({
+        error: 'Player token required',
+      })
+    }
+    expect(room.players).toEqual([])
+    expect(room.lastActivityAt).toBe(activityBefore)
+  })
+
+  it('preserves every byte of a valid non-whitespace player token for reconnect identity', () => {
+    const room = rooms.createRoom()
+    const exactToken = '  exact-token  '
+    const first = rooms.join(room.code, 'Spaced token', exactToken)
+    if ('error' in first) throw new Error(first.error)
+    expect(first.player.token).toBe(exactToken)
+    expect(rooms.playerByToken(room.code, exactToken)?.id).toBe(first.player.id)
+    expect(rooms.playerByToken(room.code, exactToken.trim())).toBeUndefined()
+
+    rooms.setConnected(room.code, exactToken, false)
+    const reconnected = rooms.join(room.code, 'Ignored rename', exactToken)
+    if ('error' in reconnected) throw new Error(reconnected.error)
+    expect(reconnected.player.id).toBe(first.player.id)
+    expect(reconnected.player.token).toBe(exactToken)
+  })
+
   it('rejects joins beyond 20 players', () => {
     const room = rooms.createRoom()
     for (let i = 0; i < 20; i++) rooms.join(room.code, `p${i}`, `tok-${i}`)
@@ -198,6 +228,16 @@ describe('RoomManager game lifecycle', () => {
       [{ id: 'q1', a: 'A', b: 'B' }],
       wouldYouRather.defaultSettings,
     )
+
+    const activeActivity = room.lastActivityAt
+    clock.now = 1_500
+    for (const token of [undefined, '', '   ', 42] as unknown[]) {
+      expect(rooms.join(room.code, 'Invalid active token', token as string)).toEqual({
+        error: 'Player token required',
+      })
+    }
+    expect(room.players).toHaveLength(2)
+    expect(room.lastActivityAt).toBe(activeActivity)
 
     clock.now = 2_000
     const reconnect = rooms.join(room.code, 'Ignored rename', 'tok-a')

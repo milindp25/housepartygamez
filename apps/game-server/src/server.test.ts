@@ -497,6 +497,87 @@ describe('game flow over sockets', () => {
     expect(serverRooms.getRoom(code)?.players).toHaveLength(3)
   })
 
+  it('rejects forged player tokens before lobby or active-Mafia mutation', async () => {
+    const host = client()
+    const { code } = await host.emitWithAck('room:create')
+    const room = serverRooms.getRoom(code)!
+    const invalidTokens: unknown[] = [undefined, '', '   ', 42]
+    const forgedStates: RoomStateMsg[] = []
+    const lobbyActivity = room.lastActivityAt
+    for (const [index, token] of invalidTokens.entries()) {
+      const forged = client()
+      forged.on('room:state', (message) => forgedStates.push(message))
+      expect(
+        await forged.timeout(500).emitWithAck('room:join', {
+          code,
+          nickname: `Forged lobby ${index}`,
+          playerToken: token as string,
+        }),
+      ).toEqual({ ok: false, error: 'Player token required' })
+    }
+    expect(room.players).toEqual([])
+    expect(room.lastActivityAt).toBe(lobbyActivity)
+    expect(forgedStates).toEqual([])
+
+    const phones = Array.from({ length: 4 }, () => client())
+    const joins = await Promise.all(
+      phones.map((phone, index) =>
+        phone.emitWithAck('room:join', {
+          code,
+          nickname: `Valid ${index + 1}`,
+          playerToken: `valid-forged-check-${index}`,
+        }),
+      ),
+    )
+    const playerIds = joins.map((join) => {
+      if (!join.ok) throw new Error(join.error)
+      return join.playerId
+    })
+    const startedAtHost = nextGamePhase(host, 'night')
+    expect(await host.emitWithAck('game:start', { gameId: 'mafia', tone: 'family' })).toEqual({
+      ok: true,
+    })
+    await startedAtHost
+    const activeActivity = room.lastActivityAt
+
+    for (const [index, token] of invalidTokens.entries()) {
+      const forged = client()
+      forged.on('room:state', (message) => forgedStates.push(message))
+      expect(
+        await forged.timeout(500).emitWithAck('room:join', {
+          code,
+          nickname: `Forged active ${index}`,
+          playerToken: token as string,
+        }),
+      ).toEqual({ ok: false, error: 'Player token required' })
+    }
+    expect(room.players).toHaveLength(4)
+    expect(room.lastActivityAt).toBe(activeActivity)
+    expect(forgedStates).toEqual([])
+
+    const state = room.game?.state as MafiaState
+    const mafiaIndex = playerIds.findIndex((playerId) => state.roles[playerId] === 'mafia')
+    const victimId = playerIds.find((playerId) => state.roles[playerId] !== 'mafia')!
+    const reconnect = client()
+    expect(
+      await reconnect.emitWithAck('room:join', {
+        code,
+        nickname: 'Ignored valid reconnect rename',
+        playerToken: `valid-forged-check-${mafiaIndex}`,
+      }),
+    ).toMatchObject({ ok: true, playerId: playerIds[mafiaIndex] })
+
+    const actionAtHost = nextState(host, (message) => {
+      const view = message.game?.view as { phase?: string; actionsDone?: number } | undefined
+      return view?.phase === 'night' && view.actionsDone === 1
+    })
+    expect(await reconnect.emitWithAck('game:input', { input: { targetId: victimId } })).toEqual({
+      ok: true,
+      accepted: true,
+    })
+    expect((await actionAtHost).players).toHaveLength(4)
+  })
+
   it('hosts Bluff Battle without leaking truth or authors before reveal', async () => {
     const host = client()
     const { code } = await host.emitWithAck('room:create')
