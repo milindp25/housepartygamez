@@ -22,8 +22,31 @@ function client(): Client {
   return c
 }
 
-function nextState(c: Client): Promise<RoomStateMsg> {
-  return new Promise((resolve) => c.once('room:state', resolve))
+function nextState(
+  c: Client,
+  predicate: (msg: RoomStateMsg) => boolean = () => true,
+): Promise<RoomStateMsg> {
+  // Wait for the next `room:state` that satisfies `predicate`. Intermediate
+  // broadcasts (from prior votes still racing to arrive on this socket) are
+  // dropped rather than mistakenly caught — the tests care about a specific
+  // phase transition, not "whatever fires next".
+  return new Promise((resolve) => {
+    const handler = (msg: RoomStateMsg) => {
+      if (predicate(msg)) {
+        c.off('room:state', handler)
+        resolve(msg)
+      }
+    }
+    c.on('room:state', handler)
+  })
+}
+
+/** Convenience: wait for a state whose game view has a specific `phase`. */
+function nextGamePhase(c: Client, phase: string): Promise<RoomStateMsg> {
+  return nextState(c, (m) => {
+    const view = m.game?.view as { phase?: string } | undefined
+    return view?.phase === phase
+  })
 }
 
 beforeAll(async () => {
@@ -102,5 +125,50 @@ describe('game server sockets', () => {
     const tv2 = client()
     const res = await tv2.emitWithAck('room:watch', { code })
     expect(res).toEqual({ ok: true, view: { code, phase: 'lobby', players: [] } })
+  })
+})
+
+describe('game flow over sockets', () => {
+  it('host starts WYR, players vote, reveal broadcasts, host ends game', async () => {
+    const host = client()
+    const { code } = await host.emitWithAck('room:create')
+    const p1 = client()
+    const p2 = client()
+    await p1.emitWithAck('room:join', { code, nickname: 'Ana', playerToken: 'g-tok-1' })
+    await p2.emitWithAck('room:join', { code, nickname: 'Ben', playerToken: 'g-tok-2' })
+
+    const hostGameState = nextState(host)
+    const started = await host.emitWithAck('game:start', {
+      gameId: 'would-you-rather',
+      tone: 'friends',
+      rounds: 1,
+    })
+    expect(started).toEqual({ ok: true })
+    const hostMsg = await hostGameState
+    expect(hostMsg.phase).toBe('game')
+    expect(hostMsg.game?.view).toMatchObject({ phase: 'vote', votedCount: 0, totalPlayers: 2 })
+
+    await p1.emitWithAck('game:input', { input: { choice: 'a' } })
+    const revealAtHost = nextGamePhase(host, 'reveal')
+    const revealAtP2 = nextGamePhase(p2, 'reveal')
+    await p2.emitWithAck('game:input', { input: { choice: 'a' } })
+    expect((await revealAtHost).game?.view).toMatchObject({
+      phase: 'reveal',
+      counts: { a: 2, b: 0 },
+    })
+    expect((await revealAtP2).game?.view).toMatchObject({ phase: 'reveal', yourChoice: 'a' })
+
+    const backToLobby = nextState(p1, (m) => m.phase === 'lobby')
+    host.emit('game:end')
+    expect((await backToLobby).phase).toBe('lobby')
+  })
+
+  it('players cannot start games; only the host can', async () => {
+    const host = client()
+    const { code } = await host.emitWithAck('room:create')
+    const p1 = client()
+    await p1.emitWithAck('room:join', { code, nickname: 'Ana', playerToken: 'g-tok-3' })
+    const res = await p1.emitWithAck('game:start', { gameId: 'would-you-rather', tone: 'friends' })
+    expect(res).toEqual({ ok: false, error: 'Only the host can start a game' })
   })
 })

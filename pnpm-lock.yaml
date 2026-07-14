@@ -20,6 +20,9 @@ importers:
 
   apps/game-server:
     dependencies:
+      '@hpg/content':
+        specifier: workspace:*
+        version: link:../../packages/content
       '@hpg/shared':
         specifier: workspace:*
         version: link:../../packages/shared

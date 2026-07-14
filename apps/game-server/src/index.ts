@@ -10,13 +10,15 @@ const SWEEP_INTERVAL_MS = 60_000
 const port = Number(process.env.PORT ?? 4000)
 
 const httpServer = createServer()
-const { io, rooms } = attachGameServer(httpServer)
+const { io, rooms, timers } = attachGameServer(httpServer)
 
 setInterval(() => {
   const expired = rooms.sweepExpired(ROOM_IDLE_MS, EMPTY_LOBBY_IDLE_MS)
   if (expired.length === 0) return
   logger.info({ event: 'rooms_expired', roomCodes: expired })
   for (const code of expired) {
+    // Clear the timer first so a firing setTimeout can't chase a swept room.
+    timers.clear(code)
     io.in(code).disconnectSockets()
   }
 }, SWEEP_INTERVAL_MS)
