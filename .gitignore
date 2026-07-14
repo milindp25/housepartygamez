@@ -3,3 +3,8 @@ node_modules/
 dist/
 *.tsbuildinfo
 .env*.local
+# Playwright run artifacts (per-run report + last-run.json).
+apps/web/test-results/
+apps/web/playwright-report/
+# macOS Finder metadata.
+.DS_Store
