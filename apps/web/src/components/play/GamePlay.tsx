@@ -1,6 +1,7 @@
 'use client'
 import type {
   GameId,
+  ImposterPlayerView,
   MltPlayerView,
   NhiePlayerView,
   WstPlayerView,
@@ -11,6 +12,7 @@ import { WyrPlay } from './WyrPlay'
 import { MltPlay } from './MltPlay'
 import { NhiePlay } from './NhiePlay'
 import { WstPlay } from './WstPlay'
+import { ImposterPlay } from './ImposterPlay'
 
 /**
  * Routes the personalized player view to the right game's phone renderer.
@@ -37,6 +39,14 @@ export function GamePlay({ gameId, view }: { gameId: GameId; view: unknown }) {
           view={view as WstPlayerView}
           onSubmitAnswer={(text) => input({ text })}
           onGuess={(authorId) => input({ authorId })}
+        />
+      )
+    case 'imposter':
+      return (
+        <ImposterPlay
+          view={view as ImposterPlayerView}
+          onReady={() => input({ ready: true })}
+          onVote={(suspectId) => input({ suspectId })}
         />
       )
     default:

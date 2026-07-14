@@ -1,9 +1,17 @@
 'use client'
-import type { GameId, MltHostView, NhieHostView, WstHostView, WyrHostView } from '@hpg/shared'
+import type {
+  GameId,
+  ImposterHostView,
+  MltHostView,
+  NhieHostView,
+  WstHostView,
+  WyrHostView,
+} from '@hpg/shared'
 import { WyrHost } from './WyrHost'
 import { MltHost } from './MltHost'
 import { NhieHost } from './NhieHost'
 import { WstHost } from './WstHost'
+import { ImposterHost } from './ImposterHost'
 
 export interface GameHostProps {
   gameId: GameId
@@ -30,6 +38,10 @@ export function GameHost({ gameId, view, onAdvance, onEnd }: GameHostProps) {
       return <NhieHost view={view as NhieHostView} onAdvance={onAdvance} onEnd={onEnd} />
     case 'who-said-that':
       return <WstHost view={view as WstHostView} onAdvance={onAdvance} onEnd={onEnd} />
+    case 'imposter':
+      return (
+        <ImposterHost view={view as ImposterHostView} onAdvance={onAdvance} onEnd={onEnd} />
+      )
     default:
       return <p>Unknown game: {gameId}</p>
   }

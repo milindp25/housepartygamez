@@ -16,6 +16,7 @@ const GAMES: Array<{ id: GameId; name: string }> = [
   { id: 'most-likely-to', name: 'Most Likely To' },
   { id: 'never-have-i-ever', name: 'Never Have I Ever' },
   { id: 'who-said-that', name: 'Who Said That?' },
+  { id: 'imposter', name: 'Imposter' },
 ]
 
 /**
