@@ -1,9 +1,9 @@
 'use client'
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import type { RoomStateMsg, WyrChoice, WyrPlayerView } from '@hpg/shared'
+import type { RoomStateMsg } from '@hpg/shared'
 import { getPlayerToken, getSocket } from '@/lib/socket'
-import { WyrPlay } from '@/components/play/WyrPlay'
+import { GamePlay } from '@/components/play/GamePlay'
 
 /**
  * The phone-facing join flow. Renders a code + nickname form (the code is
@@ -40,12 +40,7 @@ function JoinForm() {
     if (view.phase === 'game' && view.game) {
       return (
         <main className="min-h-screen bg-slate-950 p-6 text-white">
-          <WyrPlay
-            view={view.game.view as WyrPlayerView}
-            onVote={(choice: WyrChoice) =>
-              getSocket().emit('game:input', { input: { choice } }, () => {})
-            }
-          />
+          <GamePlay gameId={view.game.id} view={view.game.view} />
         </main>
       )
     }
