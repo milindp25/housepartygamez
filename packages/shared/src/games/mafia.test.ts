@@ -64,6 +64,42 @@ describe('mafia', () => {
     expect(byRole(s, 'mafia')).toHaveLength(2)
   })
 
+  it('assigns the complete classic role set at the four-player technical floor', () => {
+    const s = fresh(players.slice(0, 4))
+    expect(byRole(s, 'mafia')).toHaveLength(1)
+    expect(byRole(s, 'doctor')).toHaveLength(1)
+    expect(byRole(s, 'detective')).toHaveLength(1)
+    expect(byRole(s, 'civilian')).toHaveLength(1)
+  })
+
+  it('assigns 5 mafia and the two special town roles at the 20-player ceiling', () => {
+    const twenty = Array.from({ length: 20 }, (_, index) => ({
+      id: `large-${index}`,
+      nickname: `Large ${index}`,
+      connected: true,
+    }))
+    const s = fresh(twenty)
+    expect(byRole(s, 'mafia')).toHaveLength(5)
+    expect(byRole(s, 'doctor')).toHaveLength(1)
+    expect(byRole(s, 'detective')).toHaveLength(1)
+    expect(byRole(s, 'civilian')).toHaveLength(13)
+  })
+
+  it('uses code-unit order when colliding role hashes cross a role boundary', () => {
+    const collisionPlayers: GamePlayer[] = ['x', ' $?', ' % ', 'y'].map((id) => ({
+      id,
+      nickname: id,
+      connected: true,
+    }))
+    const s = fresh(collisionPlayers)
+    expect(s.roles).toMatchObject({
+      x: 'mafia',
+      ' $?': 'doctor',
+      ' % ': 'detective',
+      y: 'civilian',
+    })
+  })
+
   it('starts night one with the configured timer and isolated player data', () => {
     const s = fresh()
     expect(s).toMatchObject({ phase: 'night', day: 1, deadline: T0 + 45_000, winner: null })
@@ -225,6 +261,25 @@ describe('mafia', () => {
     expect(s.phase).toBe('reveal')
     expect(s.lastVote).toMatchObject({ eliminatedId: null, revealedRole: null })
     expect(Object.values(s.alive).filter(Boolean)).toHaveLength(alive.length)
+  })
+
+  it('sorts equal vote tallies by nickname code units instead of locale', () => {
+    const orderedPlayers: GamePlayer[] = [
+      { id: 'lower', nickname: 'a', connected: true },
+      { id: 'upper', nickname: 'Z', connected: true },
+      { id: 'third', nickname: 'Third', connected: true },
+      { id: 'fourth', nickname: 'Fourth', connected: true },
+    ]
+    let s = mafia.reducer(fresh(orderedPlayers), { type: 'TIMER_EXPIRED', now: T0 })
+    s = toVote(s)
+    s = input(s, 'lower', 'upper')
+    s = input(s, 'upper', 'lower')
+    s = input(s, 'third', 'upper')
+    s = input(s, 'fourth', 'lower')
+    expect(s.lastVote?.tally).toEqual([
+      { nickname: 'Z', count: 2 },
+      { nickname: 'a', count: 2 },
+    ])
   })
 
   it('rejects self-votes, unknown targets, non-living targets, and dead voters', () => {

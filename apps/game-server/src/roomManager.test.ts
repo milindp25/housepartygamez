@@ -188,6 +188,29 @@ describe('RoomManager game lifecycle', () => {
     })
   })
 
+  it('reconnects known seats but rejects new seats while any game is active', () => {
+    const clock = { now: 1_000 }
+    const rooms = new RoomManager({ now: () => clock.now })
+    const room = seatedRoom(rooms)
+    rooms.startGame(
+      room.code,
+      wouldYouRather,
+      [{ id: 'q1', a: 'A', b: 'B' }],
+      wouldYouRather.defaultSettings,
+    )
+
+    clock.now = 2_000
+    const reconnect = rooms.join(room.code, 'Ignored rename', 'tok-a')
+    expect(reconnect).toMatchObject({ player: { id: room.players[0].id, nickname: 'Ana' } })
+    expect(room.lastActivityAt).toBe(2_000)
+    clock.now = 3_000
+    expect(rooms.join(room.code, 'Late player', 'tok-late')).toEqual({
+      error: 'Game already running',
+    })
+    expect(room.players.map((player) => player.nickname)).toEqual(['Ana', 'Ben'])
+    expect(room.lastActivityAt).toBe(2_000)
+  })
+
   it('advances Bluff phases when only disconnected players remain outstanding', () => {
     const rooms = new RoomManager()
     const room = rooms.createRoom()

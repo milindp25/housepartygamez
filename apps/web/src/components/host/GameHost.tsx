@@ -50,7 +50,7 @@ export function GameHost({ gameId, view, onAdvance, onEnd }: GameHostProps) {
       return <BluffHost view={view as BluffHostView} onAdvance={onAdvance} onEnd={onEnd} />
     case 'mafia':
       return <MafiaHost view={view as MafiaHostView} onAdvance={onAdvance} onEnd={onEnd} />
-    default:
-      return <p>Unknown game: {gameId}</p>
   }
+  gameId satisfies never
+  return <p>Unknown game: {String(gameId)}</p>
 }

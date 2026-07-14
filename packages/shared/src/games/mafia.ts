@@ -125,10 +125,14 @@ function hash(value: string): number {
   return result >>> 0
 }
 
+function compareCodeUnits(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
 function assignRoles(players: GamePlayer[], seed: number): Record<string, MafiaRole> {
   const shuffled = [...players].sort((a, b) => {
     const difference = hash(a.id + seed) - hash(b.id + seed)
-    return difference === 0 ? a.id.localeCompare(b.id) : difference
+    return difference === 0 ? compareCodeUnits(a.id, b.id) : difference
   })
   const mafiaCount = Math.max(1, Math.floor(players.length / 4))
   return Object.fromEntries(
@@ -289,8 +293,18 @@ function resolveVote(state: MafiaState, now: number): MafiaState {
       eliminatedId,
       revealedRole: eliminatedId === null ? null : state.roles[eliminatedId],
       tally: [...counts.entries()]
-        .map(([targetId, count]) => ({ nickname: nickname(state, targetId) ?? '?', count }))
-        .sort((a, b) => b.count - a.count || a.nickname.localeCompare(b.nickname)),
+        .map(([targetId, count]) => ({
+          targetId,
+          nickname: nickname(state, targetId) ?? '?',
+          count,
+        }))
+        .sort(
+          (a, b) =>
+            b.count - a.count ||
+            compareCodeUnits(a.nickname, b.nickname) ||
+            compareCodeUnits(a.targetId, b.targetId),
+        )
+        .map(({ nickname: targetNickname, count }) => ({ nickname: targetNickname, count })),
     },
     phase: 'reveal',
     deadline: now + state.settings.revealSeconds * 1000,

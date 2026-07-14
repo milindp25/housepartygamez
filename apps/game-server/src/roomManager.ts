@@ -97,8 +97,9 @@ export class RoomManager {
    * Join a room, or reconnect to an existing seat. A previously seated player is
    * recognised by `token` and restored to their original seat (preserving their
    * id) rather than taking a new one; this is how reconnects survive a dropped
-   * socket. New players must supply a non-blank, unique nickname and the room
-   * must have space.
+   * socket. New seats are accepted only while the room is in its lobby; once
+   * a game starts, its participant set is frozen. Lobby joins must supply a
+   * non-blank, unique nickname and the room must have space.
    *
    * @param code - The room code, in any case.
    * @param nickname - Desired display name (trimmed); ignored on reconnect.
@@ -113,13 +114,15 @@ export class RoomManager {
   ): { room: Room; player: RoomPlayer } | { error: string } {
     const room = this.getRoom(code)
     if (!room) return { error: 'Room not found' }
-    room.lastActivityAt = this.now()
 
     const existing = room.players.find((p) => p.token === token)
     if (existing) {
+      room.lastActivityAt = this.now()
       this.updatePlayerConnection(room, existing, true)
       return { room, player: existing }
     }
+    if (room.game) return { error: 'Game already running' }
+    room.lastActivityAt = this.now()
 
     const name = nickname.trim()
     if (!name) return { error: 'Nickname required' }

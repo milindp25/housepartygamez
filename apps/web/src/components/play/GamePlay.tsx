@@ -79,7 +79,7 @@ export function GamePlay({ gameId, view }: { gameId: GameId; view: unknown }) {
       return (
         <MafiaPlay view={view as MafiaPlayerView} onTarget={(targetId) => input({ targetId })} />
       )
-    default:
-      return <p>Unknown game: {gameId}</p>
   }
+  gameId satisfies never
+  return <p>Unknown game: {String(gameId)}</p>
 }

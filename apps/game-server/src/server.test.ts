@@ -414,6 +414,89 @@ describe('game flow over sockets', () => {
     }
   })
 
+  it('safely rejects a new seat during Mafia while reconnects and existing actions stay healthy', async () => {
+    const host = client()
+    const { code } = await host.emitWithAck('room:create')
+    const phones = Array.from({ length: 4 }, () => client())
+    const joins = await Promise.all(
+      phones.map((phone, index) =>
+        phone.emitWithAck('room:join', {
+          code,
+          nickname: `Active ${index + 1}`,
+          playerToken: `active-mafia-${index}`,
+        }),
+      ),
+    )
+    const playerIds = joins.map((join) => {
+      if (!join.ok) throw new Error(join.error)
+      return join.playerId
+    })
+    const startedAtHost = nextGamePhase(host, 'night')
+    expect(await host.emitWithAck('game:start', { gameId: 'mafia', tone: 'family' })).toEqual({
+      ok: true,
+    })
+    await startedAtHost
+
+    const room = serverRooms.getRoom(code)!
+    const state = room.game?.state as MafiaState
+    const mafiaIndex = playerIds.findIndex((playerId) => state.roles[playerId] === 'mafia')
+    const mafiosoId = playerIds[mafiaIndex]
+    const victimId = playerIds.find((playerId) => state.roles[playerId] !== 'mafia')!
+
+    const late = client()
+    expect(
+      await late.timeout(500).emitWithAck('room:join', {
+        code,
+        nickname: 'Late player',
+        playerToken: 'brand-new-active-token',
+      }),
+    ).toEqual({ ok: false, error: 'Game already running' })
+    expect(room.players).toHaveLength(4)
+
+    const disconnectedAtHost = nextState(host, (message) =>
+      message.players.some((player) => player.id === mafiosoId && !player.connected),
+    )
+    phones[mafiaIndex].disconnect()
+    await disconnectedAtHost
+
+    const reconnectedMafioso = client()
+    const reconnect = await reconnectedMafioso.emitWithAck('room:join', {
+      code,
+      nickname: 'Ignored rename',
+      playerToken: `active-mafia-${mafiaIndex}`,
+    })
+    expect(reconnect).toMatchObject({ ok: true, playerId: mafiosoId })
+    expect(room.players).toHaveLength(4)
+
+    const actionAtHost = nextState(host, (message) => {
+      const view = message.game?.view as { phase?: string; actionsDone?: number } | undefined
+      return view?.phase === 'night' && view.actionsDone === 1
+    })
+    expect(
+      await reconnectedMafioso.emitWithAck('game:input', { input: { targetId: victimId } }),
+    ).toEqual({ ok: true, accepted: true })
+    expect((await actionAtHost).players).toHaveLength(4)
+  })
+
+  it('rejects starting Mafia below its four-player technical minimum', async () => {
+    const host = client()
+    const { code } = await host.emitWithAck('room:create')
+    const phones = [client(), client(), client()]
+    for (const [index, phone] of phones.entries()) {
+      await phone.emitWithAck('room:join', {
+        code,
+        nickname: `Small ${index + 1}`,
+        playerToken: `small-mafia-${index}`,
+      })
+    }
+    expect(await host.emitWithAck('game:start', { gameId: 'mafia', tone: 'friends' })).toEqual({
+      ok: false,
+      error: 'Need at least 4 players',
+    })
+    expect(serverRooms.getRoom(code)?.game).toBeUndefined()
+    expect(serverRooms.getRoom(code)?.players).toHaveLength(3)
+  })
+
   it('hosts Bluff Battle without leaking truth or authors before reveal', async () => {
     const host = client()
     const { code } = await host.emitWithAck('room:create')
