@@ -56,6 +56,29 @@ describe('bluff-battle', () => {
     expect(play()).toEqual(play())
   })
 
+  it('uses uniform opaque option IDs that do not disclose the truth before reveal', () => {
+    let s = bluff(fresh(), 'p1', 'A flock')
+    s = bluff(s, 'p2', 'A stand')
+    s = bluff(s, 'p3', 'A blush')
+    const view = bluffBattle.playerView(s, 'p1') as { options: Array<{ id: string }> }
+
+    expect(view.options.map((o) => o.id)).toEqual(
+      expect.arrayContaining(s.options.map((o) => o.id)),
+    )
+    for (const option of view.options) expect(option.id).toMatch(/^opt-\d+$/)
+  })
+
+  it('assigns unique IDs when distinct normalized bluffs have colliding hashes', () => {
+    let s = bluff(fresh(), 'p1', 'an')
+    s = bluff(s, 'p2', 'c0') // same length and hash as "an" under the shuffle hash
+    s = bluff(s, 'p3', 'A blush')
+
+    expect(s.options.map((o) => o.text)).toEqual(
+      expect.arrayContaining(['Flamboyance', 'an', 'c0', 'A blush']),
+    )
+    expect(new Set(s.options.map((o) => o.id)).size).toBe(s.options.length)
+  })
+
   it('players cannot vote for options they authored', () => {
     let s = bluff(fresh(), 'p1', 'A flock')
     s = bluff(s, 'p2', 'A stand')

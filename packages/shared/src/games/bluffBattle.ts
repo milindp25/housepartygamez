@@ -130,30 +130,33 @@ function nickname(state: BluffState, id: string): string {
 /**
  * Build vote options: the truth plus each distinct bluff (case-insensitive
  * dedup, co-authors merged). Order = hash shuffle so the truth's position
- * carries no signal.
+ * carries no signal; opaque positional IDs are assigned after ordering.
  */
 function buildOptions(state: BluffState): BluffOption[] {
-  const byText = new Map<string, BluffOption>()
+  const byText = new Map<string, Omit<BluffOption, 'id'>>()
   for (const [playerId, text] of Object.entries(state.bluffs)) {
     const key = normalize(text)
     const existing = byText.get(key)
     if (existing) existing.authorIds.push(playerId)
     else
       byText.set(key, {
-        id: `opt-${key.length}-${hash(key)}`,
         text,
         isTruth: false,
         authorIds: [playerId],
       })
   }
   const p = prompt(state)
-  const options: BluffOption[] = [
-    { id: `opt-truth-${hash(normalize(p.answer))}`, text: p.answer, isTruth: true, authorIds: [] },
+  const options: Array<Omit<BluffOption, 'id'>> = [
+    { text: p.answer, isTruth: true, authorIds: [] },
     ...byText.values(),
   ]
-  return options.sort(
-    (a, b) => hash(a.id + state.seed + state.round) - hash(b.id + state.seed + state.round),
-  )
+  return options
+    .map((option) => {
+      const key = normalize(option.text)
+      return { option, key, rank: hash(`${key}:${state.seed}:${state.round}`) }
+    })
+    .sort((a, b) => a.rank - b.rank || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
+    .map(({ option }, index) => ({ ...option, id: `opt-${index}` }))
 }
 
 function toVote(state: BluffState, now: number): BluffState {

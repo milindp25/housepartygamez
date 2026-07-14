@@ -33,7 +33,7 @@ Scoring: +2 for voting the real answer; +1 to a bluff's **each** author per play
 
 **Files:** `packages/shared/src/games/bluffBattle.ts` + `.test.ts`; export from shared index.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 `packages/shared/src/games/bluffBattle.test.ts`:
 ```ts
@@ -141,7 +141,7 @@ describe('bluff-battle', () => {
 })
 ```
 
-- [ ] **Step 2: Run FAIL, then implement**
+- [x] **Step 2: Run FAIL, then implement**
 
 `packages/shared/src/games/bluffBattle.ts`:
 ```ts
@@ -476,7 +476,7 @@ export const bluffBattle: GameDefinition<BluffState, BluffSettings, BluffPrompt>
 }
 ```
 
-- [ ] **Step 3: PASS, lint, commit** — `git commit -m "feat: bluff-battle definition with dedup, anti-cheat views, fooling points"`
+- [x] **Step 3: PASS, lint, commit** — `git commit -m "feat: bluff-battle definition with dedup, anti-cheat views, fooling points"`
 
 ---
 
@@ -543,4 +543,4 @@ git tag plan-7-bluff-battle
 ## Self-review notes
 
 - **Spec coverage:** Classic Bluff Battle ✓ (points for truth + fooling); trivia/funny-fact content across tones ✓; anti-cheat via stripped player views ✓. Deferred per spec: Image Bluff, Headline Bluff, funniest-answer bonus votes, Speed mode (timer settings exist), custom packs already work via plan 4's parser (add a `question | answer` line format to `parsePackText` when plan 4 is done — one extra branch + test, note it in Deviations if plan 4 landed first).
-- **Type consistency:** engine API untouched; `BluffOption.id` derives from normalized text + hash so option identity is stable across reducer runs.
+- **Type consistency:** engine API untouched; `BluffOption.id` is assigned uniformly by deterministic shuffled position, so IDs are stable for identical inputs without leaking truth status or colliding on text hashes.
