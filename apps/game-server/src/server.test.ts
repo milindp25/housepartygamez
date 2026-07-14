@@ -578,6 +578,131 @@ describe('game flow over sockets', () => {
     expect((await actionAtHost).players).toHaveLength(4)
   })
 
+  it('rejects malformed join payloads and nicknames without throwing or mutating the room', async () => {
+    const host = client()
+    const { code } = await host.emitWithAck('room:create')
+    const room = serverRooms.getRoom(code)!
+    const activityBefore = room.lastActivityAt
+    const malformedStates: RoomStateMsg[] = []
+    const forged = client()
+    forged.on('room:state', (message) => malformedStates.push(message))
+
+    for (const payload of [undefined, null, 42] as unknown[]) {
+      expect(
+        await forged
+          .timeout(500)
+          .emitWithAck(
+            'room:join',
+            payload as { code: string; nickname: string; playerToken: string },
+          ),
+      ).toEqual({ ok: false, error: 'Invalid join request' })
+    }
+    for (const badCode of [undefined, '', '   ', 42] as unknown[]) {
+      expect(
+        await forged.timeout(500).emitWithAck('room:join', {
+          code: badCode as string,
+          nickname: 'Bad code',
+          playerToken: 'valid-token-for-bad-code',
+        }),
+      ).toEqual({ ok: false, error: 'Room code required' })
+    }
+    for (const [index, nickname] of [undefined, 42, '   '].entries()) {
+      expect(
+        await forged.timeout(500).emitWithAck('room:join', {
+          code,
+          nickname: nickname as string,
+          playerToken: `valid-token-bad-name-${index}`,
+        }),
+      ).toEqual({ ok: false, error: 'Nickname required' })
+    }
+
+    const noAck = client()
+    const noAckStates: RoomStateMsg[] = []
+    noAck.on('room:state', (message) => noAckStates.push(message))
+    ;(
+      noAck as unknown as {
+        emit(event: 'room:join', payload: unknown): void
+      }
+    ).emit('room:join', {
+      code,
+      nickname: 'No ack seat',
+      playerToken: 'valid-no-ack-token',
+    })
+    ;(
+      noAck as unknown as {
+        emit(event: 'room:join', payload: unknown, ack: unknown): void
+      }
+    ).emit(
+      'room:join',
+      {
+        code,
+        nickname: 'Non-function ack seat',
+        playerToken: 'valid-non-function-ack-token',
+      },
+      42,
+    )
+    expect(
+      await noAck.timeout(500).emitWithAck('room:join', {
+        code: '',
+        nickname: 'Ordering probe',
+        playerToken: 'ordering-probe-token',
+      }),
+    ).toEqual({ ok: false, error: 'Room code required' })
+
+    expect(room.players).toEqual([])
+    expect(room.lastActivityAt).toBe(activityBefore)
+    expect(malformedStates).toEqual([])
+    expect(noAckStates).toEqual([])
+
+    const phones = Array.from({ length: 4 }, () => client())
+    const joins = await Promise.all(
+      phones.map((phone, index) =>
+        phone.emitWithAck('room:join', {
+          code,
+          nickname: `Boundary ${index + 1}`,
+          playerToken: `boundary-valid-${index}`,
+        }),
+      ),
+    )
+    const playerIds = joins.map((join) => {
+      if (!join.ok) throw new Error(join.error)
+      return join.playerId
+    })
+    const startedAtHost = nextGamePhase(host, 'night')
+    expect(await host.emitWithAck('game:start', { gameId: 'mafia', tone: 'family' })).toEqual({
+      ok: true,
+    })
+    await startedAtHost
+    const state = room.game?.state as MafiaState
+    const mafiaIndex = playerIds.findIndex((playerId) => state.roles[playerId] === 'mafia')
+    const mafiosoId = playerIds[mafiaIndex]
+    const victimId = playerIds.find((playerId) => state.roles[playerId] !== 'mafia')!
+
+    const offlineAtHost = nextState(host, (message) =>
+      message.players.some((player) => player.id === mafiosoId && !player.connected),
+    )
+    phones[mafiaIndex].disconnect()
+    await offlineAtHost
+    const reconnect = client()
+    expect(
+      await reconnect.emitWithAck('room:join', {
+        code,
+        nickname: 42 as unknown as string,
+        playerToken: `boundary-valid-${mafiaIndex}`,
+      }),
+    ).toMatchObject({ ok: true, playerId: mafiosoId })
+
+    const actionAtHost = nextState(host, (message) => {
+      const view = message.game?.view as { phase?: string; actionsDone?: number } | undefined
+      return view?.phase === 'night' && view.actionsDone === 1
+    })
+    expect(await reconnect.emitWithAck('game:input', { input: { targetId: victimId } })).toEqual({
+      ok: true,
+      accepted: true,
+    })
+    expect((await actionAtHost).players).toHaveLength(4)
+  })
+
   it('hosts Bluff Battle without leaking truth or authors before reveal', async () => {
     const host = client()
     const { code } = await host.emitWithAck('room:create')

@@ -102,15 +102,15 @@ export class RoomManager {
    * non-blank, unique nickname and the room must have space.
    *
    * @param code - The room code, in any case.
-   * @param nickname - Desired display name (trimmed); ignored on reconnect.
+   * @param nickname - Untrusted desired display name (trimmed); ignored on reconnect.
    * @param token - Non-empty stable per-client secret identifying the seat.
    * @returns The room and the seated player, or an `{ error }` describing why the
    *   join was rejected.
    */
   join(
     code: string,
-    nickname: string,
-    token: string,
+    nickname: unknown,
+    token: unknown,
   ): { room: Room; player: RoomPlayer } | { error: string } {
     const room = this.getRoom(code)
     if (!room) return { error: 'Room not found' }
@@ -123,14 +123,15 @@ export class RoomManager {
       return { room, player: existing }
     }
     if (room.game) return { error: 'Game already running' }
-    room.lastActivityAt = this.now()
 
+    if (typeof nickname !== 'string') return { error: 'Nickname required' }
     const name = nickname.trim()
     if (!name) return { error: 'Nickname required' }
     if (room.players.some((p) => p.nickname.toLowerCase() === name.toLowerCase())) {
       return { error: 'Nickname taken' }
     }
     if (room.players.length >= MAX_PLAYERS) return { error: 'Room full' }
+    room.lastActivityAt = this.now()
 
     const player: RoomPlayer = {
       id: `p${this.nextPlayerId++}`,

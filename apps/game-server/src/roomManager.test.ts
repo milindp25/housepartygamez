@@ -52,6 +52,9 @@ describe('RoomManager', () => {
         error: 'Player token required',
       })
     }
+    expect(rooms.join(room.code, undefined, undefined)).toEqual({
+      error: 'Player token required',
+    })
     expect(room.players).toEqual([])
     expect(room.lastActivityAt).toBe(activityBefore)
   })
@@ -70,6 +73,39 @@ describe('RoomManager', () => {
     if ('error' in reconnected) throw new Error(reconnected.error)
     expect(reconnected.player.id).toBe(first.player.id)
     expect(reconnected.player.token).toBe(exactToken)
+  })
+
+  it('validates nickname only for new lobby seats after reconnect and active-game ordering', () => {
+    const room = rooms.createRoom()
+    const lobbyActivity = room.lastActivityAt
+    clock.now += 1_000
+    for (const nickname of [undefined, 42, '   '] as unknown[]) {
+      expect(rooms.join(room.code, nickname as string, `new-${String(nickname)}`)).toEqual({
+        error: 'Nickname required',
+      })
+    }
+    expect(room.players).toEqual([])
+    expect(room.lastActivityAt).toBe(lobbyActivity)
+
+    const ana = rooms.join(room.code, 'Ana', 'known-token')
+    if ('error' in ana) throw new Error(ana.error)
+    rooms.join(room.code, 'Ben', 'ben-token')
+    rooms.setConnected(room.code, 'known-token', false)
+    const reconnect = rooms.join(room.code, 42 as unknown as string, 'known-token')
+    if ('error' in reconnect) throw new Error(reconnect.error)
+    expect(reconnect.player.id).toBe(ana.player.id)
+    expect(reconnect.player.nickname).toBe('Ana')
+
+    rooms.startGame(
+      room.code,
+      wouldYouRather,
+      [{ id: 'q1', a: 'A', b: 'B' }],
+      wouldYouRather.defaultSettings,
+    )
+    expect(rooms.join(room.code, undefined as unknown as string, 'new-active-token')).toEqual({
+      error: 'Game already running',
+    })
+    expect(room.players).toHaveLength(2)
   })
 
   it('rejects joins beyond 20 players', () => {

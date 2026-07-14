@@ -157,14 +157,30 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
       ack({ ok: true, view: rooms.toHostState(room) })
     })
 
-    socket.on('room:join', ({ code, nickname, playerToken }, ack) => {
+    socket.on('room:join', (payload, ack) => {
+      if (typeof ack !== 'function') {
+        log.warn({ event: 'join_rejected', reason: 'missing acknowledgement' })
+        return
+      }
+      if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+        log.warn({ event: 'join_rejected', reason: 'invalid request' })
+        return ack({ ok: false, error: 'Invalid join request' })
+      }
+      const request = payload as unknown as Record<string, unknown>
+      const { code } = request
+      if (typeof code !== 'string' || !code.trim()) {
+        log.warn({ event: 'join_rejected', reason: 'room code required' })
+        return ack({ ok: false, error: 'Room code required' })
+      }
+      const nickname = request.nickname
+      const playerToken = request.playerToken
       const result = rooms.join(code, nickname, playerToken)
       if ('error' in result) {
         log.warn({ event: 'join_rejected', roomCode: code, reason: result.error })
         return ack({ ok: false, error: result.error })
       }
       socket.data.roomCode = result.room.code
-      socket.data.playerToken = playerToken
+      socket.data.playerToken = result.player.token
       socket.data.role = 'player'
       void socket.join(result.room.code)
       log.info({
@@ -179,7 +195,7 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
       // joiner's ack response. Same event name, ack shape, and emit target
       // as before — only the intra-tick order matters. (Plan 1 deviations.)
       synchronizeRoom(result.room)
-      const playerMsg = rooms.toPlayerState(result.room, playerToken)
+      const playerMsg = rooms.toPlayerState(result.room, result.player.token)
       if (playerMsg) ack({ ok: true, playerId: result.player.id, view: playerMsg })
     })
 
