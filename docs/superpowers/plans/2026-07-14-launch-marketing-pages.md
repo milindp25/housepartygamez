@@ -48,11 +48,11 @@ docs/superpowers/plans/2026-07-13-plan-5-launch.md # Task 4 checkbox + deviation
 - Consumes: `GameId` from `@hpg/shared`.
 - Produces: `MarketingGame`, `MARKETING_GAMES`, and `getMarketingGame(slug)` for both routes.
 
-- [ ] **Step 1: Add the web unit-test runner**
+- [x] **Step 1: Add the web unit-test runner**
 
-Run `pnpm --filter @hpg/web add -D vitest@^3.2.7`, then add `"test": "vitest run"` to the web package scripts. This is test infrastructure only; do not create production registry code yet.
+Run `pnpm --filter @hpg/web add -D vitest@^3.2.7`, then add `"test": "vitest run src"` to the web package scripts so Playwright specs under `e2e/` are not collected. This is test infrastructure only; do not create production registry code yet.
 
-- [ ] **Step 2: Write the failing registry tests**
+- [x] **Step 2: Write the failing registry tests**
 
 ```ts
 import { describe, expect, it } from 'vitest'
@@ -80,12 +80,12 @@ describe('marketing game registry', () => {
 })
 ```
 
-- [ ] **Step 3: Run RED**
+- [x] **Step 3: Run RED**
 
 Run: `pnpm --filter @hpg/web exec vitest run src/lib/games.test.ts`  
 Expected: fail because `./games` does not exist.
 
-- [ ] **Step 4: Add the registry**
+- [x] **Step 4: Add the registry**
 
 Use this exact public shape:
 
@@ -128,7 +128,7 @@ mafia: secret Mafia/Doctor/Detective/Civilian roles, night actions and day votes
 
 Each `howTo` array contains four imperative steps and does not claim deferred modes. Use accents in this order: iris, lime, coral, cyan, coral, lime, iris.
 
-- [ ] **Step 5: Run GREEN, full web unit tests, and lint**
+- [x] **Step 5: Run GREEN, full web unit tests, and lint**
 
 Run:
 
@@ -141,7 +141,7 @@ pnpm lint
 
 Expected: all pass with seven registry entries.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/lib/games.ts apps/web/src/lib/games.test.ts apps/web/package.json pnpm-lock.yaml
