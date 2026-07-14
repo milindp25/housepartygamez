@@ -3,7 +3,14 @@
  * far). The union is closed here so `RoomStateMsg.game.id` and the server's
  * definition registry stay exhaustive across the codebase.
  */
-export type GameId = 'would-you-rather' | 'most-likely-to' | 'never-have-i-ever' | 'who-said-that'
+export type GameId =
+  | 'would-you-rather'
+  | 'most-likely-to'
+  | 'never-have-i-ever'
+  | 'who-said-that'
+  | 'imposter'
+  | 'bluff-battle'
+  | 'mafia'
 
 /**
  * A seated participant as the engine sees them. This is deliberately a subset
