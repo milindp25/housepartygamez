@@ -58,7 +58,7 @@ apps/web/e2e/
 - Create: `packages/shared/src/engine/types.ts`
 - Modify: `packages/shared/src/index.ts`
 
-- [ ] **Step 1: Write the types**
+- [x] **Step 1: Write the types**
 
 `packages/shared/src/engine/types.ts`:
 ```ts
@@ -123,7 +123,7 @@ Append to `packages/shared/src/index.ts`:
 export * from './engine/types'
 ```
 
-- [ ] **Step 2: Verify compile, commit**
+- [x] **Step 2: Verify compile, commit**
 
 Run: `pnpm --filter @hpg/shared exec tsc --noEmit` → exit 0.
 ```bash
@@ -139,7 +139,7 @@ git add packages/shared/src && git commit -m "feat: engine types — GameDefinit
 - Test: `packages/shared/src/engine/content.test.ts`
 - Modify: `packages/shared/src/index.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `packages/shared/src/engine/content.test.ts`:
 ```ts
@@ -174,9 +174,9 @@ describe('pickPrompts', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify FAIL** — `pnpm --filter @hpg/shared test` (cannot resolve `./content`).
+- [x] **Step 2: Run to verify FAIL** — `pnpm --filter @hpg/shared test` (cannot resolve `./content`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `packages/shared/src/engine/content.ts`:
 ```ts
@@ -213,7 +213,7 @@ export function pickPrompts<P>(
 
 Append to `packages/shared/src/index.ts`: `export * from './engine/content'`
 
-- [ ] **Step 4: Run to verify PASS, lint, commit**
+- [x] **Step 4: Run to verify PASS, lint, commit**
 
 ```bash
 pnpm --filter @hpg/shared test && pnpm lint
@@ -229,7 +229,7 @@ git add packages/shared/src && git commit -m "feat: content pack types and promp
 - Test: `packages/shared/src/games/wouldYouRather.test.ts`
 - Modify: `packages/shared/src/index.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `packages/shared/src/games/wouldYouRather.test.ts`:
 ```ts
@@ -341,9 +341,9 @@ describe('would-you-rather', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify FAIL** — `pnpm --filter @hpg/shared test`.
+- [x] **Step 2: Run to verify FAIL** — `pnpm --filter @hpg/shared test`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `packages/shared/src/games/wouldYouRather.ts`:
 ```ts
@@ -578,7 +578,7 @@ export const wouldYouRather: GameDefinition<WyrState, WyrSettings, WyrPrompt> = 
 
 Append to `packages/shared/src/index.ts`: `export * from './games/wouldYouRather'`
 
-- [ ] **Step 4: Run to verify PASS, lint, commit**
+- [x] **Step 4: Run to verify PASS, lint, commit**
 
 ```bash
 pnpm --filter @hpg/shared test && pnpm lint
@@ -593,7 +593,7 @@ git add packages/shared/src && git commit -m "feat: would-you-rather game defini
 - Create: `packages/content/package.json`, `packages/content/tsconfig.json`
 - Create: `packages/content/src/wouldYouRather.ts`, `packages/content/src/index.ts`
 
-- [ ] **Step 1: Create the package**
+- [x] **Step 1: Create the package**
 
 `packages/content/package.json`:
 ```json
@@ -613,7 +613,7 @@ git add packages/shared/src && git commit -m "feat: would-you-rather game defini
 { "extends": "../../tsconfig.base.json", "include": ["src"] }
 ```
 
-- [ ] **Step 2: Write the starter packs** (10 prompts per tone now; content expansion to 100+ is a plan-5 task)
+- [x] **Step 2: Write the starter packs** (10 prompts per tone now; content expansion to 100+ is a plan-5 task)
 
 `packages/content/src/wouldYouRather.ts`:
 ```ts
@@ -696,7 +696,7 @@ export function getPack(game: GameId, tone: PackTone): ContentPack<unknown> | un
 }
 ```
 
-- [ ] **Step 3: Install, compile, commit**
+- [x] **Step 3: Install, compile, commit**
 
 ```bash
 pnpm install
@@ -712,7 +712,7 @@ git add packages/content pnpm-lock.yaml && git commit -m "feat: content package 
 **Files:**
 - Modify: `packages/shared/src/protocol.ts`
 
-- [ ] **Step 1: Extend the protocol**
+- [x] **Step 1: Extend the protocol**
 
 In `packages/shared/src/protocol.ts`, add the imports and replace/extend as follows (keep `PlayerInfo`, `JoinResult`, `WatchResult` as-is; `RoomView` becomes `RoomStateMsg` — update the two existing references in `JoinResult`/`WatchResult`):
 
@@ -762,11 +762,11 @@ export interface ServerToClientEvents {
 
 Update `JoinResult`/`WatchResult` to carry `RoomStateMsg` instead of `RoomView`, e.g. `{ ok: true; playerId: string; view: RoomStateMsg }`.
 
-- [ ] **Step 2: Fix compile fallout**
+- [x] **Step 2: Fix compile fallout**
 
 `RoomView` was renamed — update `roomManager.ts` (`toView` return type) and both web pages' imports. Run at repo root: `pnpm -r exec tsc --noEmit` until clean (mechanical renames only).
 
-- [ ] **Step 3: Test, lint, commit**
+- [x] **Step 3: Test, lint, commit**
 
 ```bash
 pnpm test && pnpm lint
@@ -781,7 +781,7 @@ git add -A && git commit -m "feat: protocol v2 — game events and personalized 
 - Modify: `apps/game-server/src/roomManager.ts`
 - Test: `apps/game-server/src/roomManager.test.ts` (append)
 
-- [ ] **Step 1: Write the failing tests** (append to the existing describe block's file)
+- [x] **Step 1: Write the failing tests** (append to the existing describe block's file)
 
 ```ts
 import { wouldYouRather } from '@hpg/shared'
@@ -856,7 +856,7 @@ describe('RoomManager game lifecycle', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify FAIL**, then implement.
+- [x] **Step 2: Run to verify FAIL**, then implement.
 
 Modify `apps/game-server/src/roomManager.ts` — add to `Room`:
 ```ts
@@ -960,7 +960,7 @@ Add methods to `RoomManager` (and replace `toView` with the two personalized bui
 
 Update `server.ts` call sites of the removed `toView` minimally to compile (`toHostState`) — full rewiring is Task 7.
 
-- [ ] **Step 3: Run to verify PASS, lint, commit**
+- [x] **Step 3: Run to verify PASS, lint, commit**
 
 ```bash
 pnpm --filter @hpg/game-server test && pnpm lint
@@ -976,7 +976,7 @@ git add apps/game-server/src && git commit -m "feat: RoomManager game lifecycle 
 - Modify: `apps/game-server/src/server.ts`
 - Test: `apps/game-server/src/server.test.ts` (append)
 
-- [ ] **Step 1: Write the failing integration test** (append)
+- [x] **Step 1: Write the failing integration test** (append)
 
 ```ts
 describe('game flow over sockets', () => {
@@ -1024,7 +1024,7 @@ describe('game flow over sockets', () => {
 
 (`nextState`'s type changes from `RoomView` to `RoomStateMsg` — update the helper.)
 
-- [ ] **Step 2: Run to verify FAIL**, then implement.
+- [x] **Step 2: Run to verify FAIL**, then implement.
 
 `apps/game-server/src/timers.ts`:
 ```ts
@@ -1162,7 +1162,7 @@ Inside `io.on('connection')` add:
 
 Also: `room:join` and `disconnect` handlers now broadcast via `broadcastRoom(room)` instead of `io.to(...).emit(...)` (so mid-game joins/drops get personalized views), and the expiry sweep in `index.ts` calls `timers.clear(code)` for each expired room (export `timers` from `attachGameServer`'s return).
 
-- [ ] **Step 3: Run to verify PASS, lint, commit**
+- [x] **Step 3: Run to verify PASS, lint, commit**
 
 ```bash
 pnpm --filter @hpg/game-server test && pnpm lint
@@ -1178,7 +1178,7 @@ git add apps/game-server/src && git commit -m "feat: game events, personalized b
 - Create: `apps/web/src/components/host/WyrHost.tsx`, `apps/web/src/components/play/WyrPlay.tsx`
 - Modify: `apps/web/src/app/host/page.tsx`, `apps/web/src/app/join/page.tsx`
 
-- [ ] **Step 1: Shared components**
+- [x] **Step 1: Shared components**
 
 `apps/web/src/components/Countdown.tsx`:
 ```tsx
@@ -1228,7 +1228,7 @@ export function Leaderboard({
 }
 ```
 
-- [ ] **Step 2: Host + player WYR components**
+- [x] **Step 2: Host + player WYR components**
 
 `apps/web/src/components/host/WyrHost.tsx`:
 ```tsx
@@ -1328,7 +1328,7 @@ export function WyrPlay({ view, onVote }: { view: WyrPlayerView; onVote: (choice
 }
 ```
 
-- [ ] **Step 3: Wire pages**
+- [x] **Step 3: Wire pages**
 
 `apps/web/src/app/host/page.tsx` — replace with:
 ```tsx
@@ -1440,7 +1440,7 @@ export default function HostPage() {
 ```
 (with imports `WyrPlay`, `WyrPlayerView`; the state type becomes `RoomStateMsg`.)
 
-- [ ] **Step 4: Build, lint, commit**
+- [x] **Step 4: Build, lint, commit**
 
 ```bash
 pnpm --filter @hpg/web build && pnpm lint
@@ -1454,7 +1454,7 @@ git add apps/web/src && git commit -m "feat: would-you-rather host and player sc
 **Files:**
 - Create: `apps/web/playwright.config.ts`, `apps/web/e2e/would-you-rather.spec.ts`
 
-- [ ] **Step 1: Install and configure**
+- [x] **Step 1: Install and configure**
 
 ```bash
 pnpm --filter @hpg/web add -D @playwright/test
@@ -1478,7 +1478,7 @@ export default defineConfig({
 
 Add to `apps/web/package.json` scripts: `"e2e": "playwright test"`.
 
-- [ ] **Step 2: Write the happy-path test**
+- [x] **Step 2: Write the happy-path test**
 
 `apps/web/e2e/would-you-rather.spec.ts`:
 ```ts
@@ -1513,7 +1513,7 @@ test('host + two players play a full WYR round', async ({ browser }) => {
 })
 ```
 
-- [ ] **Step 3: Run, commit**
+- [x] **Step 3: Run, commit**
 
 ```bash
 pnpm --filter @hpg/web e2e   # expect: 1 passed
@@ -1524,10 +1524,10 @@ git add apps/web && git commit -m "test: playwright e2e for would-you-rather hap
 
 ### Task 10: Manual verification + milestone
 
-- [ ] **Step 1:** `pnpm test && pnpm lint && pnpm --filter @hpg/web e2e` — all green.
-- [ ] **Step 2:** Start both apps; play a full 3-round game with two phone-sized windows + one host window: votes lock in, timer forces reveal if someone stalls, reveal counts are right, changing a vote before the last voter works, final leaderboard shows, "Back to lobby" returns everyone, and a phone reload mid-round restores the current round view (reconnect).
-- [ ] **Step 3:** Kill and restart the game-server mid-game — clients show disconnected state, and creating a fresh room works (rooms are ephemeral by design).
-- [ ] **Step 4:** Tag: `git tag plan-2-would-you-rather`
+- [x] **Step 1:** `pnpm test && pnpm lint && pnpm --filter @hpg/web e2e` — all green.
+- [x] **Step 2:** Start both apps; play a full 3-round game with two phone-sized windows + one host window: votes lock in, timer forces reveal if someone stalls, reveal counts are right, changing a vote before the last voter works, final leaderboard shows, "Back to lobby" returns everyone, and a phone reload mid-round restores the current round view (reconnect).
+- [x] **Step 3:** Kill and restart the game-server mid-game — clients show disconnected state, and creating a fresh room works (rooms are ephemeral by design).
+- [x] **Step 4:** Tag: `git tag plan-2-would-you-rather`
 
 ---
 
@@ -1536,3 +1536,18 @@ git add apps/web && git commit -m "test: playwright e2e for would-you-rather hap
 - **Spec coverage (plan-2 slice):** GameDefinition pure functions ✓, server-authoritative timers dispatching TIMER_EXPIRED ✓, personalized per-socket views (info-hiding foundation) ✓, content packs family/friends/spicy with 18+ gate ✓, host advance control ✓, reconnect returns current view (via existing token + broadcastRoom) ✓, Playwright e2e ✓, JSON log events for every game transition ✓.
 - **Deviation from spec, intentional:** packs are typed TS modules (JSON-shaped, build-time validated) instead of raw `.json` files — better type safety, zero loader config. Custom packs (plan 4) still transport as JSON.
 - **Types:** `WyrHostView`/`WyrPlayerView`/`RoomStateMsg`/`StartGameResult` defined once and imported everywhere; `toHostState`/`toPlayerState`/`playerByToken`/`applyGameAction` names consistent between Task 6 tests and implementation and Task 7 wiring.
+
+---
+
+## Deviations (recorded during execution)
+
+Executor: subagent-driven-development / direct-implementation session on 2026-07-13, continuing from plan 1's environment (see plan 1's `## Deviations` for pnpm-via-corepack, `.prettierignore` scope, and Next 16 / Tailwind v4 notes).
+
+- **`broadcastRoom` is synchronous.** The plan's snippet uses `await io.in(room.code).fetchSockets()` and returns a Promise. In this repo it walks `io.sockets.adapter.rooms.get(code)` synchronously instead, so every personalized emit is queued in the same event-loop tick as the caller's ack. This restores the plan-1 intra-tick ordering guarantee (broadcast frames queued before ack response) without any async hop, so a client that registers a `room:state` listener right after `emitWithAck` resolves does not miss the state change. Same target/payload; only the async boundary is gone.
+- **`server.test.ts` `nextState` helper gained a predicate.** The plan's helper listens for `c.once('room:state', resolve)`. That's inherently racy across sockets — the game-flow test registers listeners on host/p2 *after* awaiting p1's `emitWithAck`, at which point p1's vote broadcast is racing to reach the other sockets. To make the plan's verbatim assertions deterministic, `nextState` now accepts an optional predicate and a `nextGamePhase(client, phase)` sugar. Only the helper changed; the tests still assert what the plan intended.
+- **`toView` kept as a compat alias.** Task 6 was expected to replace `toView`, but socket code called it before Task 7's rewiring. Task 6 renames it to a thin alias over `toHostState`, and Task 7 deletes the last call sites — no behavior change, but the alias existed on-branch between the two commits so the tree kept compiling.
+- **`@hpg/content` added as a `@hpg/game-server` dependency.** The plan's Task 7 snippet imports `@hpg/content` without touching game-server's `package.json`; the workspace resolver needs it explicit. Added `@hpg/content: workspace:*` to game-server dependencies.
+- **`.gitignore` broadened during Task 9.** The Playwright run drops `apps/web/test-results/` (per-run report) and I initially staged it by mistake. `.gitignore` now excludes it, `apps/web/playwright-report/`, and `.DS_Store` (previously untracked but still noisy). The stray commit was reverted in the same session.
+- **Playwright `Next` button selector uses `exact: true`.** Next 16's dev-tools overlay ships an `Open Next.js Dev Tools` button that partially matches "Next", so the plan's `getByRole('button', { name: 'Next' })` was ambiguous. `exact: true` disambiguates it. The runtime UI text is unchanged.
+
+Ordering / semantics preserved everywhere: personalized snapshots, event names (`game_started`, `game_input_rejected`, `game_phase_advanced`, `game_ended`), error strings (`Need at least 2 players`, `Only the host can start a game`, `Unknown game or pack`, `Not seated in a game`), and the `game:*` wire shapes match the plan and the spec.
