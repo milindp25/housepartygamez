@@ -9,11 +9,15 @@ import type {
   ServerToClientEvents,
 } from '@hpg/shared'
 import { attachGameServer } from './server'
+import type { RoomManager } from './roomManager'
+import type { RoomTimers } from './timers'
 
 type Client = Socket<ServerToClientEvents, ClientToServerEvents>
 
 let httpServer: HttpServer
 let url: string
+let serverRooms: RoomManager
+let roomTimers: RoomTimers
 const clients: Client[] = []
 
 function client(): Client {
@@ -68,7 +72,9 @@ const bluffFamilyAnswers: Record<string, string> = {
 
 beforeAll(async () => {
   httpServer = createServer()
-  attachGameServer(httpServer)
+  const attached = attachGameServer(httpServer)
+  serverRooms = attached.rooms
+  roomTimers = attached.timers
   await new Promise<void>((resolve) => httpServer.listen(0, resolve))
   url = `http://localhost:${(httpServer.address() as AddressInfo).port}`
 })
@@ -143,9 +149,114 @@ describe('game server sockets', () => {
     const res = await tv2.emitWithAck('room:watch', { code })
     expect(res).toEqual({ ok: true, view: { code, phase: 'lobby', players: [] } })
   })
+
+  it('keeps a same-token seat online until its final live socket disconnects', async () => {
+    const host = client()
+    const { code } = await host.emitWithAck('room:create')
+    const oldAna = client()
+    const ben = client()
+    const cy = client()
+    await oldAna.emitWithAck('room:join', {
+      code,
+      nickname: 'Ana',
+      playerToken: 'overlap-ana',
+    })
+    await ben.emitWithAck('room:join', { code, nickname: 'Ben', playerToken: 'overlap-ben' })
+    await cy.emitWithAck('room:join', { code, nickname: 'Cy', playerToken: 'overlap-cy' })
+    const bluffAtHost = nextGamePhase(host, 'bluff')
+    expect(
+      await host.emitWithAck('game:start', {
+        gameId: 'bluff-battle',
+        tone: 'family',
+        rounds: 1,
+      }),
+    ).toEqual({ ok: true })
+    await bluffAtHost
+
+    const newAna = client()
+    const rejoined = await newAna.emitWithAck('room:join', {
+      code,
+      nickname: 'Ana',
+      playerToken: 'overlap-ana',
+    })
+    expect(rejoined.ok).toBe(true)
+    oldAna.disconnect()
+    await new Promise((resolve) => setTimeout(resolve, 25))
+
+    const room = serverRooms.getRoom(code)!
+    expect(room.players.find((player) => player.token === 'overlap-ana')?.connected).toBe(true)
+    expect(serverRooms.toHostState(room).game?.view).toMatchObject({
+      phase: 'bluff',
+      submittedCount: 0,
+      totalPlayers: 3,
+    })
+
+    const finalDrop = nextState(host, (message) =>
+      message.players.some((player) => player.nickname === 'Ana' && !player.connected),
+    )
+    newAna.disconnect()
+    expect(await finalDrop).toMatchObject({
+      game: { view: { phase: 'bluff', submittedCount: 0, totalPlayers: 2 } },
+    })
+
+    host.disconnect()
+    await new Promise((resolve) => setTimeout(resolve, 25))
+    expect(
+      room.players
+        .filter((player) => ['Ben', 'Cy'].includes(player.nickname))
+        .map((p) => p.connected),
+    ).toEqual([true, true])
+  })
 })
 
 describe('game flow over sockets', () => {
+  it('re-arms the authoritative phase timer when reconnect advances Bluff Battle', async () => {
+    const host = client()
+    const { code } = await host.emitWithAck('room:create')
+    const phones = [client(), client(), client()]
+    for (const [index, phone] of phones.entries()) {
+      await phone.emitWithAck('room:join', {
+        code,
+        nickname: ['Ana', 'Ben', 'Cy'][index],
+        playerToken: `timer-rejoin-${index}`,
+      })
+    }
+    const bluffAtHost = nextGamePhase(host, 'bluff')
+    await host.emitWithAck('game:start', { gameId: 'bluff-battle', tone: 'family', rounds: 1 })
+    const bluffView = (await bluffAtHost).game?.view as { deadline: number; phase: string }
+    expect(roomTimers.deadlineFor(code)).toBe(bluffView.deadline)
+    expect(
+      await phones[0].emitWithAck('game:input', { input: { text: 'Already submitted' } }),
+    ).toEqual({ ok: true, accepted: true })
+
+    for (const phone of phones) {
+      const disconnectedAtHost = nextState(host, (message) => {
+        const view = message.game?.view as { phase?: string; totalPlayers?: number } | undefined
+        return (
+          view?.phase === 'bluff' && view.totalPlayers === phones.length - phones.indexOf(phone) - 1
+        )
+      })
+      phone.disconnect()
+      await disconnectedAtHost
+    }
+    expect(
+      (serverRooms.toHostState(serverRooms.getRoom(code)!).game?.view as { phase: string }).phase,
+    ).toBe('bluff')
+
+    const voteAtHost = nextGamePhase(host, 'vote')
+    const reconnectedAna = client()
+    const rejoined = await reconnectedAna.emitWithAck('room:join', {
+      code,
+      nickname: 'Ana',
+      playerToken: 'timer-rejoin-0',
+    })
+    expect(rejoined.ok).toBe(true)
+    const voteView = (await voteAtHost).game?.view as { deadline: number; phase: string }
+    expect(voteView.phase).toBe('vote')
+    expect(voteView.deadline).not.toBe(bluffView.deadline)
+    expect(roomTimers.deadlineFor(code)).toBe(voteView.deadline)
+  })
+
   it('host starts WYR, players vote, reveal broadcasts, host ends game', async () => {
     const host = client()
     const { code } = await host.emitWithAck('room:create')

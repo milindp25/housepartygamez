@@ -43,4 +43,9 @@ export class RoomTimers {
     if (existing) clearTimeout(existing.handle)
     this.handles.delete(code)
   }
+
+  /** Return the currently armed deadline for diagnostics/tests, or `undefined` when unarmed. */
+  deadlineFor(code: string): number | undefined {
+    return this.handles.get(code)?.deadline
+  }
 }

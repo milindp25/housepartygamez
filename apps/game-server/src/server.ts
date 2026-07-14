@@ -85,6 +85,36 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
     }
   }
 
+  /** Re-arm the authoritative game deadline (or clear it in lobby), then broadcast one snapshot. */
+  function synchronizeRoom(room: Room): void {
+    if (room.game) {
+      timers.reschedule(room.code, room.game.state.deadline, () =>
+        dispatch(room.code, { type: 'TIMER_EXPIRED', now: Date.now() }),
+      )
+    } else {
+      timers.clear(room.code)
+    }
+    broadcastRoom(room)
+  }
+
+  function hasOtherLivePlayerSocket(
+    roomCode: string,
+    playerToken: string,
+    excludingSocketId: string,
+  ): boolean {
+    for (const candidate of io.sockets.sockets.values()) {
+      if (candidate.id === excludingSocketId || !candidate.connected) continue
+      if (
+        candidate.data.role === 'player' &&
+        candidate.data.roomCode === roomCode &&
+        candidate.data.playerToken === playerToken
+      ) {
+        return true
+      }
+    }
+    return false
+  }
+
   /**
    * Run one action through the reducer, re-arm the timer against the new
    * deadline, and broadcast personalized snapshots. Silent no-op when the
@@ -94,10 +124,7 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
     const previousState = rooms.getRoom(code)?.game?.state
     const room = rooms.applyGameAction(code, action)
     if (!room?.game) return false
-    timers.reschedule(code, room.game.state.deadline, () =>
-      dispatch(code, { type: 'TIMER_EXPIRED', now: Date.now() }),
-    )
-    broadcastRoom(room)
+    synchronizeRoom(room)
     return room.game.state !== previousState
   }
 
@@ -149,7 +176,7 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
       // sync), so the host's `room:state` frame is queued ahead of the
       // joiner's ack response. Same event name, ack shape, and emit target
       // as before — only the intra-tick order matters. (Plan 1 deviations.)
-      broadcastRoom(result.room)
+      synchronizeRoom(result.room)
       const playerMsg = rooms.toPlayerState(result.room, playerToken)
       if (playerMsg) ack({ ok: true, playerId: result.player.id, view: playerMsg })
     })
@@ -181,15 +208,9 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
         return ack({ ok: false, error: result.error })
       }
       log.info({ event: 'game_started', roomCode: code, gameId, tone })
-      const game = result.room.game
-      if (game) {
-        timers.reschedule(code, game.state.deadline, () =>
-          dispatch(code, { type: 'TIMER_EXPIRED', now: Date.now() }),
-        )
-      }
       // Same intra-tick ordering as room:join: broadcast first so the host's
       // "game started" `room:state` is queued ahead of the caller's ack response.
-      broadcastRoom(result.room)
+      synchronizeRoom(result.room)
       ack({ ok: true })
     })
 
@@ -239,26 +260,24 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
     socket.on('game:end', () => {
       const code = socket.data.roomCode
       if (!code || socket.data.role !== 'host') return
-      timers.clear(code)
       const room = rooms.endGame(code)
       if (!room) return
       log.info({ event: 'game_ended', roomCode: code })
-      broadcastRoom(room)
+      synchronizeRoom(room)
     })
 
     socket.on('disconnect', () => {
-      const { roomCode, playerToken } = socket.data
-      if (!roomCode || !playerToken) return
+      const { roomCode, playerToken, role } = socket.data
+      if (role !== 'player' || !roomCode || !playerToken) return
+      if (hasOtherLivePlayerSocket(roomCode, playerToken, socket.id)) {
+        log.info({ event: 'player_socket_disconnected', roomCode, seatStillOnline: true })
+        return
+      }
       const room = rooms.setConnected(roomCode, playerToken, false)
       if (!room) return
       const player = room.players.find((p) => p.token === playerToken)
       log.info({ event: 'player_disconnected', roomCode, playerId: player?.id })
-      if (room.game) {
-        timers.reschedule(roomCode, room.game.state.deadline, () =>
-          dispatch(roomCode, { type: 'TIMER_EXPIRED', now: Date.now() }),
-        )
-      }
-      broadcastRoom(room)
+      synchronizeRoom(room)
     })
   })
 

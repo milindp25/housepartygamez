@@ -308,6 +308,7 @@ export class RoomManager {
   }
 
   private updatePlayerConnection(room: Room, player: RoomPlayer, connected: boolean): void {
+    if (player.connected === connected) return
     player.connected = connected
     if (!room.game) return
     room.game.state = room.game.definition.reducer(room.game.state, {
