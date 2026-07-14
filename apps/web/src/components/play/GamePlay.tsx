@@ -4,6 +4,7 @@ import type {
   GameId,
   GameInputResult,
   ImposterPlayerView,
+  MafiaPlayerView,
   MltPlayerView,
   NhiePlayerView,
   WstPlayerView,
@@ -16,6 +17,7 @@ import { NhiePlay } from './NhiePlay'
 import { WstPlay } from './WstPlay'
 import { ImposterPlay } from './ImposterPlay'
 import { BluffPlay } from './BluffPlay'
+import { MafiaPlay } from './MafiaPlay'
 
 /**
  * Routes the personalized player view to the right game's phone renderer.
@@ -73,6 +75,10 @@ export function GamePlay({ gameId, view }: { gameId: GameId; view: unknown }) {
         />
       )
     }
+    case 'mafia':
+      return (
+        <MafiaPlay view={view as MafiaPlayerView} onTarget={(targetId) => input({ targetId })} />
+      )
     default:
       return <p>Unknown game: {gameId}</p>
   }

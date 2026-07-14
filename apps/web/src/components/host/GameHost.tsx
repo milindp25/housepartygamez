@@ -3,6 +3,7 @@ import type {
   BluffHostView,
   GameId,
   ImposterHostView,
+  MafiaHostView,
   MltHostView,
   NhieHostView,
   WstHostView,
@@ -14,6 +15,7 @@ import { NhieHost } from './NhieHost'
 import { WstHost } from './WstHost'
 import { ImposterHost } from './ImposterHost'
 import { BluffHost } from './BluffHost'
+import { MafiaHost } from './MafiaHost'
 
 export interface GameHostProps {
   gameId: GameId
@@ -46,6 +48,8 @@ export function GameHost({ gameId, view, onAdvance, onEnd }: GameHostProps) {
       )
     case 'bluff-battle':
       return <BluffHost view={view as BluffHostView} onAdvance={onAdvance} onEnd={onEnd} />
+    case 'mafia':
+      return <MafiaHost view={view as MafiaHostView} onAdvance={onAdvance} onEnd={onEnd} />
     default:
       return <p>Unknown game: {gameId}</p>
   }

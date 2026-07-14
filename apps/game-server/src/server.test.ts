@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type {
   ClientToServerEvents,
   JoinResult,
+  MafiaState,
   RoomStateMsg,
   ServerToClientEvents,
 } from '@hpg/shared'
@@ -304,6 +305,113 @@ describe('game flow over sockets', () => {
     await p1.emitWithAck('room:join', { code, nickname: 'Ana', playerToken: 'g-tok-3' })
     const res = await p1.emitWithAck('game:start', { gameId: 'would-you-rather', tone: 'friends' })
     expect(res).toEqual({ ok: false, error: 'Only the host can start a game' })
+  })
+
+  it('starts prompt-less Mafia and sends exact role-specific night snapshots', async () => {
+    const host = client()
+    const { code } = await host.emitWithAck('room:create')
+    const phones = Array.from({ length: 7 }, () => client())
+    const joins = await Promise.all(
+      phones.map((phone, index) =>
+        phone.emitWithAck('room:join', {
+          code,
+          nickname: `Mafia ${index + 1}`,
+          playerToken: `mafia-start-${index}`,
+        }),
+      ),
+    )
+    const joinedPlayerIds = joins.map((join) => {
+      if (!join.ok) throw new Error('Failed to seat Mafia players')
+      return join.playerId
+    })
+
+    const atHost = nextGamePhase(host, 'night')
+    const atPlayers = phones.map((phone) => nextGamePhase(phone, 'night'))
+    expect(
+      await host.emitWithAck('game:start', {
+        gameId: 'mafia',
+        tone: 'spicy',
+      }),
+    ).toEqual({ ok: true })
+
+    const hostView = (await atHost).game?.view as Record<string, unknown>
+    const playerViews = (await Promise.all(atPlayers)).map(
+      (message) => message.game?.view as Record<string, unknown>,
+    )
+    expectExactKeys(hostView, [
+      'phase',
+      'day',
+      'players',
+      'actionsDone',
+      'actionsNeeded',
+      'deadline',
+    ])
+    for (const player of hostView.players as unknown[]) {
+      expectExactKeys(player, ['id', 'nickname', 'alive'])
+    }
+
+    const expectedKeysByRole: Record<string, string[]> = {
+      mafia: [
+        'phase',
+        'day',
+        'players',
+        'role',
+        'isAlive',
+        'mafiaTeam',
+        'action',
+        'candidates',
+        'yourTarget',
+        'deadline',
+      ],
+      detective: [
+        'phase',
+        'day',
+        'players',
+        'role',
+        'isAlive',
+        'detectiveLog',
+        'action',
+        'candidates',
+        'yourTarget',
+        'deadline',
+      ],
+      doctor: [
+        'phase',
+        'day',
+        'players',
+        'role',
+        'isAlive',
+        'action',
+        'candidates',
+        'yourTarget',
+        'deadline',
+      ],
+      civilian: [
+        'phase',
+        'day',
+        'players',
+        'role',
+        'isAlive',
+        'action',
+        'candidates',
+        'yourTarget',
+        'deadline',
+      ],
+    }
+    expect(new Set(playerViews.map((view) => view.role))).toEqual(
+      new Set(['mafia', 'detective', 'doctor', 'civilian']),
+    )
+    const state = serverRooms.getRoom(code)?.game?.state as MafiaState
+    for (const [index, view] of playerViews.entries()) {
+      expect(view.role).toBe(state.roles[joinedPlayerIds[index]])
+      expectExactKeys(view, expectedKeysByRole[view.role as string])
+      for (const player of view.players as unknown[]) {
+        expectExactKeys(player, ['id', 'nickname', 'alive'])
+      }
+      for (const candidate of view.candidates as unknown[]) {
+        expectExactKeys(candidate, ['id', 'nickname'])
+      }
+    }
   })
 
   it('hosts Bluff Battle without leaking truth or authors before reveal', async () => {

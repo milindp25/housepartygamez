@@ -29,6 +29,10 @@ function byRole(s: MafiaState, role: string): string[] {
     .map(([id]) => id)
 }
 
+function expectExactKeys(value: unknown, keys: string[]): void {
+  expect(Object.keys(value as Record<string, unknown>).sort()).toEqual([...keys].sort())
+}
+
 function playNight(s: MafiaState, victim: string, save: string, check: string): MafiaState {
   for (const mafioso of byRole(s, 'mafia')) {
     if (s.alive[mafioso]) s = input(s, mafioso, victim)
@@ -416,6 +420,88 @@ describe('mafia', () => {
     expect(civilianView).not.toHaveProperty('roles')
     expect(civilianView).not.toHaveProperty('mafiaTeam')
     expect(civilianView).not.toHaveProperty('detectiveLog')
+  })
+
+  it('uses exact host and role-class allowlists throughout every pre-finished phase', () => {
+    const night = fresh()
+    const [mafioso] = byRole(night, 'mafia')
+    const [doctor] = byRole(night, 'doctor')
+    const [detective] = byRole(night, 'detective')
+    const [civilian] = byRole(night, 'civilian')
+    const roleIds = { mafia: mafioso, doctor, detective, civilian }
+    const saveTarget = byRole(night, 'civilian')[1]
+    const day = playNight(night, saveTarget, saveTarget, mafioso)
+    const vote = toVote(day)
+    let reveal = vote
+    const voters = reveal.players
+      .filter((player) => reveal.alive[player.id])
+      .map((player) => player.id)
+    for (const voter of voters) {
+      reveal = input(reveal, voter, voter === civilian ? doctor : civilian)
+    }
+    expect(reveal.phase).toBe('reveal')
+
+    const phases = [night, day, vote, reveal]
+    const phaseKeys: Record<MafiaState['phase'], string[]> = {
+      night: ['phase', 'action', 'candidates', 'yourTarget', 'deadline'],
+      day: ['phase', 'lastNight', 'deadline'],
+      vote: ['phase', 'candidates', 'yourVote', 'deadline'],
+      reveal: ['phase', 'eliminatedNickname', 'revealedRole', 'tally'],
+      finished: [],
+    }
+    const hostPhaseKeys: Record<MafiaState['phase'], string[]> = {
+      night: ['phase', 'actionsDone', 'actionsNeeded', 'deadline'],
+      day: ['phase', 'lastNight', 'deadline'],
+      vote: ['phase', 'votedCount', 'totalVoters', 'deadline'],
+      reveal: ['phase', 'eliminatedNickname', 'revealedRole', 'tally'],
+      finished: [],
+    }
+
+    for (const state of phases) {
+      const host = mafia.hostView(state) as Record<string, unknown>
+      expectExactKeys(host, ['day', 'players', ...hostPhaseKeys[state.phase]])
+      for (const player of host.players as unknown[]) {
+        expectExactKeys(player, ['id', 'nickname', 'alive'])
+      }
+      if ('lastNight' in host) expectExactKeys(host.lastNight, ['killedNickname', 'saved'])
+      if ('tally' in host) {
+        for (const row of host.tally as unknown[]) expectExactKeys(row, ['nickname', 'count'])
+      }
+
+      for (const [role, playerId] of Object.entries(roleIds)) {
+        const playerView = mafia.playerView(state, playerId) as Record<string, unknown>
+        const roleOnlyKeys =
+          role === 'mafia' ? ['mafiaTeam'] : role === 'detective' ? ['detectiveLog'] : []
+        expectExactKeys(playerView, [
+          'day',
+          'players',
+          'role',
+          'isAlive',
+          ...roleOnlyKeys,
+          ...phaseKeys[state.phase],
+        ])
+        for (const player of playerView.players as unknown[]) {
+          expectExactKeys(player, ['id', 'nickname', 'alive'])
+        }
+        if ('candidates' in playerView) {
+          for (const candidate of playerView.candidates as unknown[]) {
+            expectExactKeys(candidate, ['id', 'nickname'])
+          }
+        }
+        if ('lastNight' in playerView) {
+          expectExactKeys(playerView.lastNight, ['killedNickname', 'saved'])
+        }
+        if ('tally' in playerView) {
+          for (const row of playerView.tally as unknown[])
+            expectExactKeys(row, ['nickname', 'count'])
+        }
+        if ('detectiveLog' in playerView) {
+          for (const entry of playerView.detectiveLog as unknown[]) {
+            expectExactKeys(entry, ['targetNickname', 'isMafia'])
+          }
+        }
+      }
+    }
   })
 
   it('gives dead night viewers their role banner but no action or candidates', () => {

@@ -11,13 +11,14 @@ const TONES: PackTone[] = ['family', 'friends', 'spicy']
  * server-side definition yet (plans 3+ fill them in) — the server rejects
  * `game:start` for unknown games and the host sees "Unknown game or pack".
  */
-const GAMES: Array<{ id: GameId; name: string }> = [
+const GAMES: Array<{ id: GameId; name: string; note?: string }> = [
   { id: 'would-you-rather', name: 'Would You Rather' },
   { id: 'most-likely-to', name: 'Most Likely To' },
   { id: 'never-have-i-ever', name: 'Never Have I Ever' },
   { id: 'who-said-that', name: 'Who Said That?' },
   { id: 'imposter', name: 'Imposter' },
   { id: 'bluff-battle', name: 'Bluff Battle' },
+  { id: 'mafia', name: 'Mafia', note: '6–20 players' },
 ]
 
 /**
@@ -43,7 +44,11 @@ export default function HostPage() {
 
   function startGame() {
     // Spicy packs are adult-only: the host confirms once, for the room (spec: 18+ gate).
-    if (tone === 'spicy' && !window.confirm('Spicy pack is 18+. Everyone in the room is an adult?'))
+    if (
+      gameId !== 'mafia' &&
+      tone === 'spicy' &&
+      !window.confirm('Spicy pack is 18+. Everyone in the room is an adult?')
+    )
       return
     setError(null)
     getSocket().emit('game:start', { gameId, tone }, (res) => {
@@ -98,21 +103,24 @@ export default function HostPage() {
                   className={`rounded-full px-4 py-2 ${gameId === g.id ? 'bg-indigo-600' : 'bg-slate-800'}`}
                 >
                   {g.name}
+                  {g.note && <span className="ml-2 text-xs text-slate-300">{g.note}</span>}
                 </button>
               ))}
             </div>
-            <div className="flex justify-center gap-2">
-              {TONES.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTone(t)}
-                  className={`rounded-full px-4 py-2 capitalize ${tone === t ? 'bg-indigo-600' : 'bg-slate-800'}`}
-                >
-                  {t}
-                  {t === 'spicy' && ' 🔞'}
-                </button>
-              ))}
-            </div>
+            {gameId !== 'mafia' && (
+              <div className="flex justify-center gap-2">
+                {TONES.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTone(t)}
+                    className={`rounded-full px-4 py-2 capitalize ${tone === t ? 'bg-indigo-600' : 'bg-slate-800'}`}
+                  >
+                    {t}
+                    {t === 'spicy' && ' 🔞'}
+                  </button>
+                ))}
+              </div>
+            )}
             <button
               onClick={startGame}
               className="rounded-lg bg-emerald-600 px-8 py-4 text-xl font-bold"

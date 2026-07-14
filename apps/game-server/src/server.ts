@@ -3,6 +3,7 @@ import { Server } from 'socket.io'
 import {
   bluffBattle,
   imposter,
+  mafia,
   mostLikelyTo,
   neverHaveIEver,
   pickPrompts,
@@ -41,6 +42,7 @@ const definitions: Partial<Record<GameId, AnyGameDefinition>> = {
   'who-said-that': whoSaidThat,
   imposter,
   'bluff-battle': bluffBattle,
+  mafia,
 }
 
 /**
@@ -189,8 +191,9 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
         return ack({ ok: false, error: 'Only the host can start a game' })
       }
       const definition = definitions[gameId]
-      const pack = getPack(gameId, tone)
-      if (!definition || !pack) {
+      const needsPack = gameId !== 'mafia'
+      const pack = needsPack ? getPack(gameId, tone) : null
+      if (!definition || (needsPack && !pack)) {
         log.warn({
           event: 'game_start_rejected',
           roomCode: code,
@@ -201,7 +204,7 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
         return ack({ ok: false, error: 'Unknown game or pack' })
       }
       const settings = { ...definition.defaultSettings, ...(rounds ? { rounds } : {}) }
-      const prompts = pickPrompts(pack, settings.rounds ?? pack.prompts.length)
+      const prompts = needsPack ? pickPrompts(pack!, settings.rounds ?? pack!.prompts.length) : []
       const result = rooms.startGame(code, definition, prompts, settings)
       if ('error' in result) {
         log.warn({ event: 'game_start_rejected', roomCode: code, reason: result.error })
