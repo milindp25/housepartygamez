@@ -550,7 +550,7 @@ a {
 }
 
 .detail-steps li > span {
-  color: var(--game-accent);
+  color: var(--cyan);
   font-size: 0.72rem;
 }
 
