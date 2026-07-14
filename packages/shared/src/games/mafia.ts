@@ -196,10 +196,14 @@ function plurality(votes: Record<string, string>, seed: number): string | null {
   for (const targetId of Object.values(votes)) counts.set(targetId, (counts.get(targetId) ?? 0) + 1)
   let best: string | null = null
   for (const [targetId, count] of counts) {
+    const bestCount = best === null ? 0 : (counts.get(best) ?? 0)
+    const targetHash = hash(targetId + seed)
+    const bestHash = best === null ? 0 : hash(best + seed)
     if (
       best === null ||
-      count > (counts.get(best) ?? 0) ||
-      (count === counts.get(best) && hash(targetId + seed) < hash(best + seed))
+      count > bestCount ||
+      (count === bestCount &&
+        (targetHash < bestHash || (targetHash === bestHash && targetId < best)))
     ) {
       best = targetId
     }
@@ -386,6 +390,7 @@ export const mafia: GameDefinition<MafiaState, MafiaSettings, MafiaPrompt> = {
         if (state.phase === 'night') {
           const role = state.roles[player.id]
           let night = state.night
+          // Latest accepted input wins while the phase remains open; resolution closes it.
           if (role === 'mafia') {
             if (state.roles[targetId] === 'mafia') return state
             night = { ...night, mafiaVotes: { ...night.mafiaVotes, [player.id]: targetId } }
@@ -403,6 +408,7 @@ export const mafia: GameDefinition<MafiaState, MafiaSettings, MafiaPrompt> = {
 
         if (state.phase === 'vote') {
           if (targetId === player.id) return state
+          // Votes remain revisable until the final connected voter resolves the phase.
           const next = { ...state, votes: { ...state.votes, [player.id]: targetId } }
           return voteComplete(next) ? resolveVote(next, action.now) : next
         }
@@ -427,7 +433,12 @@ export const mafia: GameDefinition<MafiaState, MafiaSettings, MafiaPrompt> = {
   },
 
   playerView(state, playerId): MafiaPlayerView {
+    const player = playerById(state, playerId)
     const role = state.roles[playerId]
+    if (player === undefined || role === undefined) {
+      throw new Error(`Unknown Mafia player: ${playerId}`)
+    }
+    const canAct = state.alive[playerId] === true && player.connected
     const base = {
       ...baseView(state),
       role,
@@ -443,7 +454,7 @@ export const mafia: GameDefinition<MafiaState, MafiaSettings, MafiaPrompt> = {
     }
 
     if (state.phase === 'night') {
-      const action = !state.alive[playerId]
+      const action = !canAct
         ? null
         : role === 'mafia'
           ? ('kill' as const)
@@ -459,8 +470,9 @@ export const mafia: GameDefinition<MafiaState, MafiaSettings, MafiaPrompt> = {
               .filter((player) => (role === 'mafia' ? state.roles[player.id] !== 'mafia' : true))
               .filter((player) => (role === 'detective' ? player.id !== playerId : true))
               .map((player) => ({ id: player.id, nickname: player.nickname }))
-      const yourTarget =
-        role === 'mafia'
+      const yourTarget = !canAct
+        ? null
+        : role === 'mafia'
           ? (state.night.mafiaVotes[playerId] ?? null)
           : role === 'doctor'
             ? state.night.doctorSave
@@ -476,10 +488,12 @@ export const mafia: GameDefinition<MafiaState, MafiaSettings, MafiaPrompt> = {
       return {
         ...base,
         phase: 'vote',
-        candidates: livingPlayers(state)
-          .filter((player) => player.id !== playerId)
-          .map((player) => ({ id: player.id, nickname: player.nickname })),
-        yourVote: state.votes[playerId] ?? null,
+        candidates: canAct
+          ? livingPlayers(state)
+              .filter((candidate) => candidate.id !== playerId)
+              .map((candidate) => ({ id: candidate.id, nickname: candidate.nickname }))
+          : [],
+        yourVote: canAct ? (state.votes[playerId] ?? null) : null,
         deadline: state.deadline,
       }
     }

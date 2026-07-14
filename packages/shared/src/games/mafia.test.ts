@@ -141,19 +141,58 @@ describe('mafia', () => {
     expect(input(s, doctor, doctor).night.doctorSave).toBe(doctor)
   })
 
-  it('uses a deterministic tie-break for tied mafia night votes', () => {
-    const customPlayers = [...players, { id: 'p8', nickname: 'N8', connected: true }]
-    const setup = () => {
-      let s = fresh(customPlayers)
-      const mafiosi = byRole(s, 'mafia')
-      const civilians = byRole(s, 'civilian')
-      s = input(s, mafiosi[0], civilians[0])
-      s = input(s, mafiosi[1], civilians[1])
-      s = input(s, byRole(s, 'doctor')[0], civilians[2])
-      return input(s, byRole(s, 'detective')[0], civilians[2])
+  it('uses target id as a stable fallback when tied mafia targets have colliding hashes', () => {
+    const collisionPlayers: GamePlayer[] = ['m1', 'm2', 'doc', 'det', 'Aa', 'BB', 'c1', 'c2'].map(
+      (id) => ({ id, nickname: id, connected: true }),
+    )
+    const setup = (votes: Array<[string, string]>) => {
+      let s = fresh(collisionPlayers)
+      s = {
+        ...s,
+        roles: {
+          m1: 'mafia',
+          m2: 'mafia',
+          doc: 'doctor',
+          det: 'detective',
+          Aa: 'civilian',
+          BB: 'civilian',
+          c1: 'civilian',
+          c2: 'civilian',
+        },
+      }
+      for (const [mafioso, target] of votes) s = input(s, mafioso, target)
+      s = input(s, 'doc', 'c1')
+      return input(s, 'det', 'c1')
     }
-    expect(setup().lastNight?.killedId).toBe(setup().lastNight?.killedId)
-    expect(setup().lastNight?.killedId).not.toBeNull()
+
+    const forward = setup([
+      ['m1', 'Aa'],
+      ['m2', 'BB'],
+    ])
+    const reverse = setup([
+      ['m1', 'BB'],
+      ['m2', 'Aa'],
+    ])
+    expect(forward.seed).toBe(1_000_000)
+    expect(forward.lastNight?.killedId).toBe('Aa')
+    expect(reverse.lastNight?.killedId).toBe('Aa')
+  })
+
+  it('allows a mafioso to overwrite their target while other night actions remain pending', () => {
+    let s = fresh([...players, { id: 'p8', nickname: 'N8', connected: true }])
+    const [firstMafioso, secondMafioso] = byRole(s, 'mafia')
+    const civilians = byRole(s, 'civilian')
+    s = input(s, firstMafioso, civilians[0])
+    s = input(s, firstMafioso, civilians[1])
+    expect(s).toMatchObject({
+      phase: 'night',
+      night: { mafiaVotes: { [firstMafioso]: civilians[1] } },
+    })
+    s = input(s, secondMafioso, civilians[1])
+    s = input(s, byRole(s, 'doctor')[0], civilians[2])
+    s = input(s, byRole(s, 'detective')[0], civilians[2])
+    expect(s.lastNight?.killedId).toBe(civilians[1])
+    expect(input(s, firstMafioso, civilians[0])).toBe(s)
   })
 
   it('eliminates the unique day-vote plurality and reveals the role', () => {
@@ -193,6 +232,20 @@ describe('mafia', () => {
     expect(input(s, aliveVoter, 'unknown')).toBe(s)
     expect(input(s, aliveVoter, civilians[0])).toBe(s)
     expect(input(s, civilians[0], aliveVoter)).toBe(s)
+  })
+
+  it('allows a voter to overwrite their target until the final connected voter submits', () => {
+    let s = mafia.reducer(fresh(), { type: 'TIMER_EXPIRED', now: T0 })
+    s = toVote(s)
+    const [voter, firstTarget, finalTarget] = s.players.map((player) => player.id)
+    s = input(s, voter, firstTarget)
+    s = input(s, voter, finalTarget)
+    expect(s).toMatchObject({ phase: 'vote', votes: { [voter]: finalTarget } })
+    for (const other of s.players.map((player) => player.id).filter((id) => id !== voter)) {
+      s = input(s, other, other === finalTarget ? firstTarget : finalTarget)
+    }
+    expect(s.phase).toBe('reveal')
+    expect(input(s, voter, firstTarget)).toBe(s)
   })
 
   it('town wins after reveal when the final mafioso was eliminated', () => {
@@ -363,6 +416,69 @@ describe('mafia', () => {
     expect(civilianView).not.toHaveProperty('roles')
     expect(civilianView).not.toHaveProperty('mafiaTeam')
     expect(civilianView).not.toHaveProperty('detectiveLog')
+  })
+
+  it('gives dead night viewers their role banner but no action or candidates', () => {
+    const s = fresh()
+    const [mafioso] = byRole(s, 'mafia')
+    const dead = { ...s, alive: { ...s.alive, [mafioso]: false } }
+    expect(mafia.playerView(dead, mafioso)).toMatchObject({
+      phase: 'night',
+      role: 'mafia',
+      isAlive: false,
+      action: null,
+      candidates: [],
+      yourTarget: null,
+    })
+  })
+
+  it('gives disconnected night viewers their role banner but no action or candidates', () => {
+    let s = fresh()
+    const [doctor] = byRole(s, 'doctor')
+    s = input(s, doctor, doctor)
+    s = connection(s, doctor, false)
+    expect(mafia.playerView(s, doctor)).toMatchObject({
+      phase: 'night',
+      role: 'doctor',
+      isAlive: true,
+      action: null,
+      candidates: [],
+      yourTarget: null,
+    })
+  })
+
+  it('gives dead vote viewers spectator information but no candidates', () => {
+    let s = fresh()
+    const [dead, save] = byRole(s, 'civilian')
+    s = toVote(playNight(s, dead, save, save))
+    expect(mafia.playerView(s, dead)).toMatchObject({
+      phase: 'vote',
+      role: 'civilian',
+      isAlive: false,
+      candidates: [],
+      yourVote: null,
+    })
+  })
+
+  it('gives disconnected vote viewers spectator information but no candidates', () => {
+    let s = mafia.reducer(fresh(), { type: 'TIMER_EXPIRED', now: T0 })
+    s = toVote(s)
+    const viewer = s.players[0].id
+    const target = s.players[1].id
+    s = input(s, viewer, target)
+    s = connection(s, viewer, false)
+    expect(mafia.playerView(s, viewer)).toMatchObject({
+      phase: 'vote',
+      role: s.roles[viewer],
+      isAlive: true,
+      candidates: [],
+      yourVote: null,
+    })
+  })
+
+  it('throws a clear error when asked for an unknown player view', () => {
+    const s = fresh()
+    expect(() => mafia.playerView(s, 'missing')).toThrowError('Unknown Mafia player: missing')
   })
 
   it('reveals every role only after the game finishes', () => {
