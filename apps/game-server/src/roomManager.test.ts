@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { wouldYouRather } from '@hpg/shared'
 import { RoomManager } from './roomManager'
 
 describe('RoomManager', () => {
@@ -88,5 +89,94 @@ describe('RoomManager', () => {
     clock.now += 31 * 60_000
     expect(rooms.sweepExpired(60 * 60_000, 30 * 60_000)).toEqual([empty.code])
     expect(rooms.getRoom(joined.code)).toBeDefined()
+  })
+})
+
+describe('RoomManager game lifecycle', () => {
+  function seatedRoom(rooms: RoomManager) {
+    const room = rooms.createRoom()
+    rooms.join(room.code, 'Ana', 'tok-a')
+    rooms.join(room.code, 'Ben', 'tok-b')
+    return room
+  }
+
+  it('starts a game with seated players and produces per-recipient views', () => {
+    const clock = { now: 1_000_000 }
+    const rooms = new RoomManager({ now: () => clock.now })
+    const room = seatedRoom(rooms)
+    const res = rooms.startGame(room.code, wouldYouRather, [{ id: 'q1', a: 'A', b: 'B' }], {
+      rounds: 1,
+      voteSeconds: 30,
+      revealSeconds: 8,
+    })
+    expect(res).not.toHaveProperty('error')
+
+    const hostMsg = rooms.toHostState(room)
+    expect(hostMsg.phase).toBe('game')
+    expect(hostMsg.game?.view).toMatchObject({ phase: 'vote', votedCount: 0 })
+
+    const anaMsg = rooms.toPlayerState(room, 'tok-a')
+    expect(anaMsg?.game?.view).toMatchObject({ phase: 'vote', yourChoice: null })
+  })
+
+  it('rejects start with too few players or an already-running game', () => {
+    const rooms = new RoomManager()
+    const solo = rooms.createRoom()
+    rooms.join(solo.code, 'Ana', 'tok-a')
+    expect(
+      rooms.startGame(
+        solo.code,
+        wouldYouRather,
+        [{ id: 'q1', a: 'A', b: 'B' }],
+        wouldYouRather.defaultSettings,
+      ),
+    ).toEqual({ error: 'Need at least 2 players' })
+
+    const room = seatedRoom(rooms)
+    rooms.startGame(
+      room.code,
+      wouldYouRather,
+      [{ id: 'q1', a: 'A', b: 'B' }],
+      wouldYouRather.defaultSettings,
+    )
+    expect(
+      rooms.startGame(
+        room.code,
+        wouldYouRather,
+        [{ id: 'q1', a: 'A', b: 'B' }],
+        wouldYouRather.defaultSettings,
+      ),
+    ).toEqual({ error: 'Game already running' })
+  })
+
+  it('applies player input through the reducer and reflects it in views', () => {
+    const rooms = new RoomManager()
+    const room = seatedRoom(rooms)
+    rooms.startGame(room.code, wouldYouRather, [{ id: 'q1', a: 'A', b: 'B' }], {
+      rounds: 1,
+      voteSeconds: 30,
+      revealSeconds: 8,
+    })
+    rooms.applyGameAction(room.code, {
+      type: 'PLAYER_INPUT',
+      playerId: rooms.playerByToken(room.code, 'tok-a')!.id,
+      input: { choice: 'a' },
+      now: Date.now(),
+    })
+    expect(rooms.toHostState(room).game?.view).toMatchObject({ votedCount: 1 })
+  })
+
+  it('endGame returns the room to the lobby', () => {
+    const rooms = new RoomManager()
+    const room = seatedRoom(rooms)
+    rooms.startGame(
+      room.code,
+      wouldYouRather,
+      [{ id: 'q1', a: 'A', b: 'B' }],
+      wouldYouRather.defaultSettings,
+    )
+    rooms.endGame(room.code)
+    expect(rooms.toHostState(room).phase).toBe('lobby')
+    expect(rooms.toHostState(room).game).toBeUndefined()
   })
 })

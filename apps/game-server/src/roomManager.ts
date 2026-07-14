@@ -1,4 +1,10 @@
-import { generateRoomCode, type RoomStateMsg } from '@hpg/shared'
+import {
+  generateRoomCode,
+  type AnyGameDefinition,
+  type GameAction,
+  type RoomStateMsg,
+  type TimedState,
+} from '@hpg/shared'
 
 /**
  * A player's server-side seat in a room. Unlike the public `PlayerInfo` broadcast
@@ -13,13 +19,26 @@ export interface RoomPlayer {
 }
 
 /**
+ * A game currently running in a room: the type-erased definition plus its
+ * opaque reducer state. Keeping the game as an optional property on `Room`
+ * (rather than a separate map) means room deletion and game cleanup are
+ * inseparable — a swept room cannot leak a live game state or timer.
+ */
+export interface ActiveGame {
+  definition: AnyGameDefinition
+  state: TimedState
+}
+
+/**
  * The authoritative server state for a single room. `lastActivityAt` is bumped on
  * every interaction so idle rooms can be swept; see {@link RoomManager.sweepExpired}.
+ * When `game` is set, the room is in the game phase; otherwise it is in the lobby.
  */
 export interface Room {
   code: string
   players: RoomPlayer[]
   lastActivityAt: number
+  game?: ActiveGame
 }
 
 const MAX_PLAYERS = 20
@@ -158,21 +177,131 @@ export class RoomManager {
   }
 
   /**
-   * Project a room to the public {@link RoomStateMsg} broadcast to clients,
-   * stripping private fields (notably each player's `token`).
+   * Look up a seated player by their device token. Used by the socket layer
+   * to map an incoming connection back to its game-side identity without
+   * exposing tokens to game reducers.
    *
-   * Task 6 replaces this with `toHostState`/`toPlayerState` (personalized per
-   * recipient) once the game lifecycle lands; for now it emits the lobby
-   * shape so socket wiring keeps compiling as the rename ripples through.
-   *
-   * @param room - The room to project.
-   * @returns The client-safe view of the room.
+   * @param code - The room code, in any case.
+   * @param token - The player's seat token.
+   * @returns The matching player, or `undefined` if the room or seat is unknown.
    */
-  toView(room: Room): RoomStateMsg {
+  playerByToken(code: string, token: string): RoomPlayer | undefined {
+    return this.getRoom(code)?.players.find((p) => p.token === token)
+  }
+
+  /**
+   * Start a game in this room using the given definition, prompt list, and
+   * settings.
+   *
+   * Never throws: returns `{ error }` when the room is missing, a game is
+   * already running, the lobby is under `minPlayers`, or the lobby exceeds
+   * a game-specific `maxPlayers`. The socket layer forwards the error string
+   * to the host as-is, so error text here is user-facing.
+   *
+   * @returns The room on success, or `{ error }` describing the rejection.
+   */
+  startGame(
+    code: string,
+    definition: AnyGameDefinition,
+    prompts: unknown[],
+    settings: unknown,
+  ): { room: Room } | { error: string } {
+    const room = this.getRoom(code)
+    if (!room) return { error: 'Room not found' }
+    if (room.game) return { error: 'Game already running' }
+    if (room.players.length < definition.minPlayers) {
+      return { error: `Need at least ${definition.minPlayers} players` }
+    }
+    if (definition.maxPlayers !== undefined && room.players.length > definition.maxPlayers) {
+      return { error: `This game supports at most ${definition.maxPlayers} players` }
+    }
+    room.lastActivityAt = this.now()
+    const players = room.players.map(({ id, nickname, connected }) => ({ id, nickname, connected }))
+    room.game = {
+      definition,
+      state: definition.init({ players, prompts, settings, now: this.now() }),
+    }
+    return { room }
+  }
+
+  /**
+   * Run one action through the active game's reducer. No-op (returns
+   * `undefined`) when the room is unknown or no game is running — the socket
+   * layer treats that as "silently drop", matching the reducer's own
+   * silent-drop behavior for invalid inputs.
+   *
+   * @returns The room after the action, or `undefined` if there was nothing to do.
+   */
+  applyGameAction(code: string, action: GameAction): Room | undefined {
+    const room = this.getRoom(code)
+    if (!room?.game) return undefined
+    room.lastActivityAt = this.now()
+    room.game.state = room.game.definition.reducer(room.game.state, action)
+    return room
+  }
+
+  /**
+   * End the current game and return the room to the lobby (either because
+   * the host clicked "Back to lobby" or a game finished naturally and the
+   * server acknowledged it). Idempotent when no game is running.
+   */
+  endGame(code: string): Room | undefined {
+    const room = this.getRoom(code)
+    if (!room) return undefined
+    room.lastActivityAt = this.now()
+    delete room.game
+    return room
+  }
+
+  private baseMsg(room: Room): Omit<RoomStateMsg, 'game' | 'phase'> {
     return {
       code: room.code,
-      phase: 'lobby',
       players: room.players.map(({ id, nickname, connected }) => ({ id, nickname, connected })),
     }
+  }
+
+  /**
+   * Snapshot for host screens (TV): public info plus the definition's
+   * `hostView`. Host views may include information (like a running
+   * leaderboard) that individual player views must not.
+   */
+  toHostState(room: Room): RoomStateMsg {
+    if (!room.game) return { ...this.baseMsg(room), phase: 'lobby' }
+    return {
+      ...this.baseMsg(room),
+      phase: 'game',
+      game: { id: room.game.definition.id, view: room.game.definition.hostView(room.game.state) },
+    }
+  }
+
+  /**
+   * Snapshot for one player's phone: public info plus THAT player's
+   * `playerView` only. This is the info-hiding boundary; two players in the
+   * same room may receive different payloads (e.g. Imposter's hidden word,
+   * Mafia's role assignment).
+   *
+   * @returns `undefined` when the token doesn't match a seat in the room.
+   */
+  toPlayerState(room: Room, token: string): RoomStateMsg | undefined {
+    const player = room.players.find((p) => p.token === token)
+    if (!player) return undefined
+    if (!room.game) return { ...this.baseMsg(room), phase: 'lobby' }
+    return {
+      ...this.baseMsg(room),
+      phase: 'game',
+      game: {
+        id: room.game.definition.id,
+        view: room.game.definition.playerView(room.game.state, player.id),
+      },
+    }
+  }
+
+  /**
+   * Legacy lobby-only projection. Kept as a thin alias over `toHostState` so
+   * Task 5's rename callers (`server.ts`) keep compiling until Task 7
+   * rewires them to the personalized `toHostState`/`toPlayerState` pair.
+   */
+  toView(room: Room): RoomStateMsg {
+    return this.toHostState(room)
   }
 }
