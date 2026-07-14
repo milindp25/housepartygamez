@@ -4,6 +4,7 @@ import {
   mostLikelyTo,
   neverHaveIEver,
   pickPrompts,
+  whoSaidThat,
   wouldYouRather,
   type AnyGameDefinition,
   type ClientToServerEvents,
@@ -35,6 +36,7 @@ const definitions: Partial<Record<GameId, AnyGameDefinition>> = {
   'would-you-rather': wouldYouRather,
   'most-likely-to': mostLikelyTo,
   'never-have-i-ever': neverHaveIEver,
+  'who-said-that': whoSaidThat,
 }
 
 /**

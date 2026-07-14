@@ -2,10 +2,12 @@ import type { ContentPack, GameId, PackTone } from '@hpg/shared'
 import { wyrFamily, wyrFriends, wyrSpicy } from './wouldYouRather'
 import { mltFamily, mltFriends, mltSpicy } from './mostLikelyTo'
 import { nhieFamily, nhieFriends, nhieSpicy } from './neverHaveIEver'
+import { wstFamily, wstFriends, wstSpicy } from './whoSaidThat'
 
 export * from './wouldYouRather'
 export * from './mostLikelyTo'
 export * from './neverHaveIEver'
+export * from './whoSaidThat'
 
 /**
  * Registry of built-in packs. Plans 3+ add the other games alongside
@@ -16,6 +18,7 @@ const registry: Partial<Record<GameId, Partial<Record<PackTone, ContentPack<unkn
   'would-you-rather': { family: wyrFamily, friends: wyrFriends, spicy: wyrSpicy },
   'most-likely-to': { family: mltFamily, friends: mltFriends, spicy: mltSpicy },
   'never-have-i-ever': { family: nhieFamily, friends: nhieFriends, spicy: nhieSpicy },
+  'who-said-that': { family: wstFamily, friends: wstFriends, spicy: wstSpicy },
 }
 
 /**
