@@ -64,7 +64,7 @@ Responsibilities: `RoomManager` owns every room rule (join validation, reconnect
 - Create: `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `.gitignore`
 - Create: `eslint.config.js`, `.prettierrc`, `.prettierignore`
 
-- [ ] **Step 1: Create root files**
+- [x] **Step 1: Create root files**
 
 `package.json`:
 ```json
@@ -120,7 +120,7 @@ dist/
 .env*.local
 ```
 
-- [ ] **Step 2: Create lint and format config**
+- [x] **Step 2: Create lint and format config**
 
 `eslint.config.js` (flat config; the web app keeps its own Next.js ESLint setup, so it's excluded here):
 ```js
@@ -145,12 +145,12 @@ dist/
 pnpm-lock.yaml
 ```
 
-- [ ] **Step 3: Verify pnpm resolves the workspace and lint runs clean**
+- [x] **Step 3: Verify pnpm resolves the workspace and lint runs clean**
 
 Run: `pnpm install && pnpm lint`
 Expected: install completes; eslint and prettier exit 0 (nothing to lint yet is fine).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add package.json pnpm-workspace.yaml tsconfig.base.json .gitignore eslint.config.js .prettierrc .prettierignore pnpm-lock.yaml
@@ -166,7 +166,7 @@ git commit -m "chore: scaffold pnpm workspace monorepo with lint/format tooling"
 - Create: `packages/shared/src/roomCode.ts`, `packages/shared/src/index.ts`
 - Test: `packages/shared/src/roomCode.test.ts`
 
-- [ ] **Step 1: Create the package**
+- [x] **Step 1: Create the package**
 
 `packages/shared/package.json`:
 ```json
@@ -188,7 +188,7 @@ git commit -m "chore: scaffold pnpm workspace monorepo with lint/format tooling"
 
 Run: `pnpm install`
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 `packages/shared/src/roomCode.test.ts`:
 ```ts
@@ -213,12 +213,12 @@ describe('generateRoomCode', () => {
 })
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 Run: `pnpm --filter @hpg/shared test`
 Expected: FAIL — cannot resolve `./roomCode`.
 
-- [ ] **Step 4: Write minimal implementation**
+- [x] **Step 4: Write minimal implementation**
 
 `packages/shared/src/roomCode.ts`:
 ```ts
@@ -239,12 +239,12 @@ export function generateRoomCode(random: () => number = Math.random): string {
 export * from './roomCode'
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `pnpm --filter @hpg/shared test`
 Expected: 3 tests PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/shared
@@ -261,7 +261,7 @@ git commit -m "feat: shared package with room code generator"
 
 Types only — no test, but they are the contract every later task imports, so they must compile.
 
-- [ ] **Step 1: Write the protocol**
+- [x] **Step 1: Write the protocol**
 
 `packages/shared/src/protocol.ts`:
 ```ts
@@ -309,12 +309,12 @@ export * from './roomCode'
 export * from './protocol'
 ```
 
-- [ ] **Step 2: Verify it compiles**
+- [x] **Step 2: Verify it compiles**
 
 Run: `pnpm --filter @hpg/shared exec tsc --noEmit`
 Expected: exit 0, no output.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add packages/shared/src
@@ -330,7 +330,7 @@ git commit -m "feat: socket protocol types for room lifecycle"
 - Create: `apps/game-server/src/roomManager.ts`
 - Test: `apps/game-server/src/roomManager.test.ts`
 
-- [ ] **Step 1: Create the package**
+- [x] **Step 1: Create the package**
 
 `apps/game-server/package.json`:
 ```json
@@ -366,7 +366,7 @@ git commit -m "feat: socket protocol types for room lifecycle"
 
 Run: `pnpm install`
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `apps/game-server/src/roomManager.test.ts`:
 ```ts
@@ -464,12 +464,12 @@ describe('RoomManager', () => {
 })
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `pnpm --filter @hpg/game-server test`
 Expected: FAIL — cannot resolve `./roomManager`.
 
-- [ ] **Step 4: Implement RoomManager**
+- [x] **Step 4: Implement RoomManager**
 
 `apps/game-server/src/roomManager.ts`:
 ```ts
@@ -577,12 +577,12 @@ export class RoomManager {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `pnpm --filter @hpg/game-server test`
 Expected: 9 tests PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/game-server
@@ -597,7 +597,7 @@ git commit -m "feat: RoomManager with join, reconnect, and expiry rules"
 - Create: `apps/game-server/src/logger.ts`, `apps/game-server/src/server.ts`, `apps/game-server/src/index.ts`
 - Test: `apps/game-server/src/server.test.ts`
 
-- [ ] **Step 1: Write the failing integration test**
+- [x] **Step 1: Write the failing integration test**
 
 `apps/game-server/src/server.test.ts`:
 ```ts
@@ -704,12 +704,12 @@ describe('game server sockets', () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm --filter @hpg/game-server test`
 Expected: server.test.ts FAILS — cannot resolve `./server`. (roomManager tests still pass.)
 
-- [ ] **Step 3: Create the structured logger**
+- [x] **Step 3: Create the structured logger**
 
 `apps/game-server/src/logger.ts`:
 ```ts
@@ -732,7 +732,7 @@ export const logger = pino({
 })
 ```
 
-- [ ] **Step 4: Implement the socket wiring**
+- [x] **Step 4: Implement the socket wiring**
 
 `apps/game-server/src/server.ts`:
 ```ts
@@ -850,12 +850,12 @@ httpServer.listen(port, () => {
 })
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `pnpm --filter @hpg/game-server test`
 Expected: all tests PASS (9 unit + 4 integration), with no log noise (test level is silent).
 
-- [ ] **Step 6: Lint and commit**
+- [x] **Step 6: Lint and commit**
 
 ```bash
 pnpm lint
@@ -871,21 +871,21 @@ git commit -m "feat: socket.io server with room lifecycle, JSON logging, expiry 
 - Create: `apps/web/` via create-next-app
 - Modify: `apps/web/next.config.ts`, `apps/web/package.json`
 
-- [ ] **Step 1: Scaffold**
+- [x] **Step 1: Scaffold**
 
 Run from repo root:
 ```bash
 pnpm create next-app@latest apps/web --ts --app --tailwind --eslint --src-dir --no-import-alias --use-pnpm
 ```
 
-- [ ] **Step 2: Rename package and add deps**
+- [x] **Step 2: Rename package and add deps**
 
 In `apps/web/package.json`, set `"name": "@hpg/web"`, then:
 ```bash
 pnpm --filter @hpg/web add socket.io-client @hpg/shared@workspace:*
 ```
 
-- [ ] **Step 3: Transpile the shared package**
+- [x] **Step 3: Transpile the shared package**
 
 `apps/web/next.config.ts`:
 ```ts
@@ -898,12 +898,12 @@ const nextConfig: NextConfig = {
 export default nextConfig
 ```
 
-- [ ] **Step 4: Verify it builds**
+- [x] **Step 4: Verify it builds**
 
 Run: `pnpm --filter @hpg/web build`
 Expected: build succeeds.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web pnpm-lock.yaml
@@ -919,7 +919,7 @@ git commit -m "chore: scaffold Next.js web app"
 
 Browser-only glue (singleton + localStorage); exercised by the manual verification and later e2e, not unit tests.
 
-- [ ] **Step 1: Write the helper**
+- [x] **Step 1: Write the helper**
 
 `apps/web/src/lib/socket.ts`:
 ```ts
@@ -952,12 +952,12 @@ export function getPlayerToken(): string {
 }
 ```
 
-- [ ] **Step 2: Verify it compiles**
+- [x] **Step 2: Verify it compiles**
 
 Run: `pnpm --filter @hpg/web exec tsc --noEmit`
 Expected: exit 0.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/web/src/lib/socket.ts
@@ -971,7 +971,7 @@ git commit -m "feat: socket client singleton with player token"
 **Files:**
 - Create: `apps/web/src/app/host/page.tsx`
 
-- [ ] **Step 1: Write the page**
+- [x] **Step 1: Write the page**
 
 `apps/web/src/app/host/page.tsx`:
 ```tsx
@@ -1018,12 +1018,12 @@ export default function HostPage() {
 }
 ```
 
-- [ ] **Step 2: Verify it compiles**
+- [x] **Step 2: Verify it compiles**
 
 Run: `pnpm --filter @hpg/web exec tsc --noEmit`
 Expected: exit 0.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/web/src/app/host
@@ -1037,7 +1037,7 @@ git commit -m "feat: host screen with room code and live lobby"
 **Files:**
 - Create: `apps/web/src/app/join/page.tsx`
 
-- [ ] **Step 1: Write the page**
+- [x] **Step 1: Write the page**
 
 `apps/web/src/app/join/page.tsx`:
 ```tsx
@@ -1129,12 +1129,12 @@ export default function JoinPage() {
 }
 ```
 
-- [ ] **Step 2: Verify build**
+- [x] **Step 2: Verify build**
 
 Run: `pnpm --filter @hpg/web build`
 Expected: build succeeds, `/join` listed in output.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/web/src/app/join
@@ -1147,17 +1147,17 @@ git commit -m "feat: phone join flow with lobby view"
 
 No new files — this proves plan 1 delivers working software.
 
-- [ ] **Step 1: Run the full test suite**
+- [x] **Step 1: Run the full test suite**
 
 Run: `pnpm test`
 Expected: all shared + game-server tests PASS.
 
-- [ ] **Step 2: Start both apps**
+- [x] **Step 2: Start both apps**
 
 Terminal 1: `pnpm dev:server` → `game-server listening on :4000`
 Terminal 2: `pnpm dev:web` → Next.js on `http://localhost:3000`
 
-- [ ] **Step 3: Walk the lobby flow**
+- [x] **Step 3: Walk the lobby flow**
 
 1. Open `http://localhost:3000/host` → a 4-letter code appears.
 2. Open `http://localhost:3000/join` in a second window (or your phone on the same network) → enter code + nickname → host screen shows the player pill instantly.
@@ -1166,7 +1166,7 @@ Terminal 2: `pnpm dev:web` → Next.js on `http://localhost:3000`
 5. Reopen `join`, same code + same nickname (same browser, so same token) → seat restored, pill lights up, still only 2 players.
 6. Try a wrong code → "Room not found"; try a taken nickname from a different browser → "Nickname taken".
 
-- [ ] **Step 4: Commit any fixes, then tag the milestone**
+- [x] **Step 4: Commit any fixes, then tag the milestone**
 
 ```bash
 git commit -am "fix: lobby polish from manual verification" # only if fixes were needed
