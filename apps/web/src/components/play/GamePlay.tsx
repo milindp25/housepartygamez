@@ -1,8 +1,9 @@
 'use client'
-import type { GameId, MltPlayerView, WyrPlayerView } from '@hpg/shared'
+import type { GameId, MltPlayerView, NhiePlayerView, WyrPlayerView } from '@hpg/shared'
 import { getSocket } from '@/lib/socket'
 import { WyrPlay } from './WyrPlay'
 import { MltPlay } from './MltPlay'
+import { NhiePlay } from './NhiePlay'
 
 /**
  * Routes the personalized player view to the right game's phone renderer.
@@ -21,6 +22,8 @@ export function GamePlay({ gameId, view }: { gameId: GameId; view: unknown }) {
       return (
         <MltPlay view={view as MltPlayerView} onVote={(targetId) => input({ targetId })} />
       )
+    case 'never-have-i-ever':
+      return <NhiePlay view={view as NhiePlayerView} onAnswer={(done) => input({ done })} />
     default:
       return <p>Unknown game: {gameId}</p>
   }
