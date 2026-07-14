@@ -14,7 +14,7 @@
 
 **Files:** `.github/workflows/ci.yml`
 
-- [ ] **Step 1:**
+- [x] **Step 1:**
 ```yaml
 name: CI
 on:
@@ -37,6 +37,10 @@ jobs:
 Note: the web build must not require live env vars — guard `DATABASE_URL!` usages so import-time access doesn't throw during build (lazy-init the db client if the plan-4 code didn't already).
 
 - [ ] **Step 2:** Push a branch, confirm the workflow passes on GitHub, merge. Commit message: `ci: lint, test, and build on every push`.
+
+## Deviations
+
+- Task 1 Step 2 remains pending a branch push and GitHub Actions observation; it is external state and is not locally verifiable.
 
 ---
 
