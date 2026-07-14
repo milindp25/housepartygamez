@@ -58,15 +58,15 @@ export const MARKETING_GAMES: readonly MarketingGame[] = [
     name: 'Never Have I Ever',
     tagline: 'Confessions land better when everyone answers.',
     description:
-      'Never Have I Ever brings the classic confession game to every phone while keeping the room focused on one shared moment. The screen presents a statement, and each player responds privately based on whether it applies to them. The host can use the supported reveal or elimination behavior to match the group: reveal responses for conversation, or let the round narrow the field when a more competitive pace feels right. Answers arrive without hand counting or watching who moves first, then the shared result gives everyone a natural opening for stories and surprised reactions. The game works with two to twenty players and usually fills about fifteen minutes. It is simple enough to start immediately, flexible enough for different crowds, and built around the laughter that follows an unexpected answer.',
-    minPlayers: 2,
+      'Never Have I Ever brings the classic confession game to every phone while keeping the room focused on one shared moment. The screen presents a statement, and each player privately chooses whether they have done it. After everyone answers, the shared display reveals the count and names behind the confessions, giving the group a natural opening for stories, surprises, and good-natured explanations. The host advances through the statements, and the final board celebrates the players with the fewest “I have” answers. There is no hand counting, no watching who moves first, and no special setup to explain. The current game welcomes three to twenty players and usually fills about fifteen minutes. Answer honestly, compare experiences, and discover which friend has the most unexpectedly eventful history.',
+    minPlayers: 3,
     maxPlayers: 20,
     minutes: 15,
     howTo: [
-      'Create a room and choose the supported round behavior.',
+      'Join the room and get ready to answer privately.',
       'Read each Never Have I Ever statement together.',
-      'Respond honestly and privately from your phone.',
-      'Reveal the outcome and invite the stories behind it.',
+      'Choose “I have” or “Never” on your phone.',
+      'Reveal the confessions and compare the final results.',
     ],
     accent: '#FB7185',
   },
@@ -94,8 +94,8 @@ export const MARKETING_GAMES: readonly MarketingGame[] = [
     name: 'Imposter',
     tagline: 'Share the clue without exposing the secret.',
     description:
-      'Imposter is a social deduction showdown where almost everyone knows the same secret word and one player does not. Each phone privately shows its owner what they need to know, keeping the hidden role hidden from the rest of the room. Players take turns speaking a clue that proves they understand the word without making it obvious enough for the outsider to copy. The imposter listens, improvises, and tries to blend in while everyone else weighs which clues feel suspicious. After the discussion, the group votes for the player they believe is faking it, and the shared screen reveals whether the room found its outsider. It plays well with three to twenty people, takes about fifteen minutes, and rewards careful wording, confident bluffing, and close attention to every nervous explanation.',
-    minPlayers: 3,
+      'Imposter is a social deduction showdown where almost everyone knows the same secret word and one player does not. Each phone privately shows its owner what they need to know, keeping the hidden role hidden from the rest of the room. Players take turns speaking a clue that proves they understand the word without making it obvious enough for the outsider to copy. The imposter listens, improvises, and tries to blend in while everyone else weighs which clues feel suspicious. After the discussion, the group votes for the player they believe is faking it, and the shared screen reveals whether the room found its outsider. It plays well with four to twenty people, takes about fifteen minutes, and rewards careful wording, confident bluffing, and close attention to every nervous explanation.',
+    minPlayers: 4,
     maxPlayers: 20,
     minutes: 15,
     howTo: [

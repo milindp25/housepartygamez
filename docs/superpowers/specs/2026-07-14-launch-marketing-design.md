@@ -46,6 +46,8 @@ Motion is concentrated in the room-code marquee: a restrained load-in or ambient
 
 The seven entries are Would You Rather, Most Likely To, Never Have I Ever, Who Said That?, Imposter, Bluff Battle, and Mafia. Mafia's marketing guidance says 6–20 players while retaining the engine's four-player technical testing floor.
 
+Current engine and host-flow behavior is authoritative for public guidance. Never Have I Ever is a 3–20 player game and the exposed flow uses its classic defaults; marketing copy must not advertise selectable reveal or elimination settings that the host UI does not expose. Imposter is a 4–20 player game.
+
 ### Landing page `/`
 
 1. **Hero:** headline “Party games everyone plays on their phones,” short explanation, Host and Join CTAs, and the room-code marquee.
@@ -108,3 +110,5 @@ This design does not redesign the active host/player game screens, add illustrat
 ## Plan deviation
 
 Plan 5 was written when only four launch games were expected. Plans 6–8 are now complete, so the public registry and static pages cover all seven implemented games. This is a current-repository correction, not a new game feature.
+
+Catalog correction (2026-07-14): implementation review found stale draft floors of two players for Never Have I Ever and three for Imposter, plus copy that exposed internal Never Have I Ever settings. The design now follows the engine floors and the currently available classic host flow.

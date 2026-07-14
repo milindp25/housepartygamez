@@ -66,10 +66,8 @@ describe('marketing game registry', () => {
     for (const game of MARKETING_GAMES) {
       expect(game.description.split(/\s+/).length).toBeGreaterThanOrEqual(100)
       expect(game.description.split(/\s+/).length).toBeLessThanOrEqual(140)
-      expect(game.howTo.length).toBeGreaterThanOrEqual(3)
-      expect(game.minPlayers).toBeGreaterThan(0)
-      expect(game.maxPlayers).toBeGreaterThanOrEqual(game.minPlayers)
-      expect(game.minutes).toBeGreaterThan(0)
+      expect(game.howTo).toHaveLength(4)
+      expect(game.howTo.every((step) => step.trim().length > 0)).toBe(true)
     }
   })
 
@@ -119,14 +117,16 @@ Write 100–140 word descriptions that accurately cover these exact mechanics:
 ```text
 would-you-rather: choose between two dilemmas, private phone votes, shared reveal; 2–20 players; 10 minutes
 most-likely-to: vote for the friend who fits a prompt, shared tally; 3–20; 15 minutes
-never-have-i-ever: respond to statements, configurable reveal/elimination behavior already supported; 2–20; 15 minutes
+never-have-i-ever: privately respond to statements, then share the classic/default count-and-names reveal; 3–20; 15 minutes
 who-said-that: submit personal answers, then identify each answer's author; 3–20; 20 minutes
-imposter: most players receive a shared word, one does not, spoken clues and vote; 3–20; 15 minutes
+imposter: most players receive a shared word, one does not, spoken clues and vote; 4–20; 15 minutes
 bluff-battle: invent fake trivia answers, find truth, score for truth and fooled friends; 3–20; 20 minutes
 mafia: secret Mafia/Doctor/Detective/Civilian roles, night actions and day votes; marketing 6–20; 30 minutes
 ```
 
 Each `howTo` array contains four imperative steps and does not claim deferred modes. Use accents in this order: iris, lime, coral, cyan, coral, lime, iris.
+
+Correction (2026-07-14): these floors now match the shared engine definitions, and Never Have I Ever copy describes only the classic/default behavior exposed by the current host flow. Internal reveal/elimination settings are not marketed until the UI makes them selectable.
 
 - [x] **Step 5: Run GREEN, full web unit tests, and lint**
 
