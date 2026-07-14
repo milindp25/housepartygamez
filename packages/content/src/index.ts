@@ -1,7 +1,9 @@
 import type { ContentPack, GameId, PackTone } from '@hpg/shared'
 import { wyrFamily, wyrFriends, wyrSpicy } from './wouldYouRather'
+import { mltFamily, mltFriends, mltSpicy } from './mostLikelyTo'
 
 export * from './wouldYouRather'
+export * from './mostLikelyTo'
 
 /**
  * Registry of built-in packs. Plans 3+ add the other games alongside
@@ -10,6 +12,7 @@ export * from './wouldYouRather'
  */
 const registry: Partial<Record<GameId, Partial<Record<PackTone, ContentPack<unknown>>>>> = {
   'would-you-rather': { family: wyrFamily, friends: wyrFriends, spicy: wyrSpicy },
+  'most-likely-to': { family: mltFamily, friends: mltFriends, spicy: mltSpicy },
 }
 
 /**

@@ -1,6 +1,7 @@
 import type { Server as HttpServer } from 'node:http'
 import { Server } from 'socket.io'
 import {
+  mostLikelyTo,
   pickPrompts,
   wouldYouRather,
   type AnyGameDefinition,
@@ -31,6 +32,7 @@ interface SocketData {
  */
 const definitions: Partial<Record<GameId, AnyGameDefinition>> = {
   'would-you-rather': wouldYouRather,
+  'most-likely-to': mostLikelyTo,
 }
 
 /**
