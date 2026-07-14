@@ -40,7 +40,7 @@ apps/game-server/src/server.ts   # MODIFIED: register 3 definitions
 - Create: `apps/web/src/components/host/GameHost.tsx`, `apps/web/src/components/play/GamePlay.tsx`
 - Modify: `apps/web/src/app/host/page.tsx`, `apps/web/src/app/join/page.tsx`
 
-- [ ] **Step 1: Dispatch components** (WYR only for now; later tasks extend the switch)
+- [x] **Step 1: Dispatch components** (WYR only for now; later tasks extend the switch)
 
 `apps/web/src/components/host/GameHost.tsx`:
 ```tsx
@@ -85,7 +85,7 @@ export function GamePlay({ gameId, view }: { gameId: GameId; view: unknown }) {
 }
 ```
 
-- [ ] **Step 2: Host page game picker**
+- [x] **Step 2: Host page game picker**
 
 In `apps/web/src/app/host/page.tsx`: replace the in-game branch with `<GameHost gameId={msg.game.id} view={msg.game.view} …/>`, replace the single start button with a picker over a local list (only entries whose definitions exist are enabled):
 
@@ -99,7 +99,7 @@ const GAMES: Array<{ id: GameId; name: string }> = [
 ```
 with `const [gameId, setGameId] = useState<GameId>('would-you-rather')`, a button row styled like the tone picker, and `startGame()` emitting `{ gameId, tone }`. In `join/page.tsx`, replace the WYR branch with `<GamePlay gameId={view.game.id} view={view.game.view} />`.
 
-- [ ] **Step 3: Verify, commit**
+- [x] **Step 3: Verify, commit**
 
 ```bash
 pnpm --filter @hpg/web build && pnpm --filter @hpg/web e2e && pnpm lint
@@ -115,7 +115,7 @@ git add apps/web/src && git commit -m "refactor: game dispatch components and ho
 - Test: `packages/shared/src/games/mostLikelyTo.test.ts`
 - Modify: `packages/shared/src/index.ts` (`export * from './games/mostLikelyTo'`)
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 `packages/shared/src/games/mostLikelyTo.test.ts`:
 ```ts
@@ -182,7 +182,7 @@ describe('most-likely-to', () => {
 })
 ```
 
-- [ ] **Step 2: Run FAIL, then implement**
+- [x] **Step 2: Run FAIL, then implement**
 
 `packages/shared/src/games/mostLikelyTo.ts`:
 ```ts
@@ -375,7 +375,7 @@ export const mostLikelyTo: GameDefinition<MltState, MltSettings, MltPrompt> = {
 }
 ```
 
-- [ ] **Step 3: PASS, lint, commit** — `git commit -m "feat: most-likely-to game definition"`
+- [x] **Step 3: PASS, lint, commit** — `git commit -m "feat: most-likely-to game definition"`
 
 ---
 
@@ -386,7 +386,7 @@ export const mostLikelyTo: GameDefinition<MltState, MltSettings, MltPrompt> = {
 - Create: `apps/web/src/components/host/MltHost.tsx`, `apps/web/src/components/play/MltPlay.tsx`
 - Modify: `packages/content/src/index.ts`, `apps/game-server/src/server.ts`, `GameHost.tsx`, `GamePlay.tsx`
 
-- [ ] **Step 1: Content packs**
+- [x] **Step 1: Content packs**
 
 `packages/content/src/mostLikelyTo.ts`:
 ```ts
@@ -461,7 +461,7 @@ export * from './mostLikelyTo'
 'most-likely-to': { family: mltFamily, friends: mltFriends, spicy: mltSpicy },
 ```
 
-- [ ] **Step 2: Components**
+- [x] **Step 2: Components**
 
 `apps/web/src/components/host/MltHost.tsx`:
 ```tsx
@@ -567,13 +567,13 @@ export function MltPlay({ view, onVote }: { view: MltPlayerView; onVote: (target
 }
 ```
 
-- [ ] **Step 3: Register everywhere**
+- [x] **Step 3: Register everywhere**
 
 - `apps/game-server/src/server.ts` definitions map: `'most-likely-to': mostLikelyTo,` (import from `@hpg/shared`).
 - `GameHost.tsx` switch: `case 'most-likely-to': return <MltHost view={view as MltHostView} onAdvance={onAdvance} onEnd={onEnd} />`
 - `GamePlay.tsx` switch: `case 'most-likely-to': return <MltPlay view={view as MltPlayerView} onVote={(targetId) => input({ targetId })} />`
 
-- [ ] **Step 4: Verify, commit**
+- [x] **Step 4: Verify, commit**
 
 ```bash
 pnpm test && pnpm --filter @hpg/web build && pnpm lint
@@ -589,7 +589,7 @@ git add -A && git commit -m "feat: most-likely-to content, screens, and registra
 - Test: `packages/shared/src/games/neverHaveIEver.test.ts`
 - Modify: `packages/shared/src/index.ts`
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 `packages/shared/src/games/neverHaveIEver.test.ts`:
 ```ts
@@ -675,7 +675,7 @@ describe('never-have-i-ever', () => {
 })
 ```
 
-- [ ] **Step 2: Run FAIL, then implement**
+- [x] **Step 2: Run FAIL, then implement**
 
 `packages/shared/src/games/neverHaveIEver.ts`:
 ```ts
@@ -919,7 +919,7 @@ export const neverHaveIEver: GameDefinition<NhieState, NhieSettings, NhiePrompt>
 }
 ```
 
-- [ ] **Step 3: PASS, lint, commit** — `git commit -m "feat: never-have-i-ever definition with reveal modes and elimination"`
+- [x] **Step 3: PASS, lint, commit** — `git commit -m "feat: never-have-i-ever definition with reveal modes and elimination"`
 
 ---
 
@@ -927,7 +927,7 @@ export const neverHaveIEver: GameDefinition<NhieState, NhieSettings, NhiePrompt>
 
 **Files:** mirror Task 3 exactly — `packages/content/src/neverHaveIEver.ts`, `NhieHost.tsx`, `NhiePlay.tsx`, registry + switches.
 
-- [ ] **Step 1: Content** (`p(id, text)` helper as in Task 3; statements complete "Never have I ever…")
+- [x] **Step 1: Content** (`p(id, text)` helper as in Task 3; statements complete "Never have I ever…")
 
 ```ts
 // family: 'broken a bone', 'stayed up all night', 'eaten food off the floor',
@@ -944,15 +944,15 @@ export const neverHaveIEver: GameDefinition<NhieState, NhieSettings, NhiePrompt>
 ```
 Build the three `ContentPack<NhiePrompt>` objects (`nhie-family-v1`, `nhie-friends-v1`, `nhie-spicy-v1`) with ids `nhie-fam-N` / `nhie-fri-N` / `nhie-spi-N`, exactly like Task 3's structure. Register in `packages/content/src/index.ts` under `'never-have-i-ever'`.
 
-- [ ] **Step 2: Components**
+- [x] **Step 2: Components**
 
 `NhiePlay.tsx` — answer phase: prompt + two big buttons "I have 🙋" / `onAnswer(true)` and "Never 😇" / `onAnswer(false)`, highlight selection (same ring pattern as `WyrPlay`), show "You're out — enjoy the show 🍿" instead of buttons when `view.eliminated`. Reveal phase: `yesCount` large, list `yesNames` when present, banner for `eliminatedNow`. Finished: `<Leaderboard rows={view.leaderboard} unit={view.elimination ? 'strikes' : '"I have"s'} />`.
 
 `NhieHost.tsx` — answer phase: `Never have I ever {prompt.text}` big, `answeredCount/totalPlayers` + `Countdown`. Reveal: giant `yesCount`, names as pills when present, `eliminatedNow` callout, Next button (`onAdvance`). Finished: leaderboard + Back-to-lobby (`onEnd`). Follow `MltHost.tsx` structure and classes exactly.
 
-- [ ] **Step 3: Register** — server definitions map + both switch components, same pattern as Task 3.
+- [x] **Step 3: Register** — server definitions map + both switch components, same pattern as Task 3.
 
-- [ ] **Step 4: Verify, commit**
+- [x] **Step 4: Verify, commit**
 
 ```bash
 pnpm test && pnpm --filter @hpg/web build && pnpm lint
@@ -970,7 +970,7 @@ git add -A && git commit -m "feat: never-have-i-ever content, screens, and regis
 
 Who Said That is the engine's stress test: an answer-collection phase whose outputs become the rounds.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 `packages/shared/src/games/whoSaidThat.test.ts`:
 ```ts
@@ -1072,7 +1072,7 @@ describe('who-said-that', () => {
 })
 ```
 
-- [ ] **Step 2: Run FAIL, then implement**
+- [x] **Step 2: Run FAIL, then implement**
 
 `packages/shared/src/games/whoSaidThat.ts`:
 ```ts
@@ -1376,7 +1376,7 @@ export const whoSaidThat: GameDefinition<WstState, WstSettings, WstPrompt> = {
 }
 ```
 
-- [ ] **Step 3: PASS, lint, commit** — `git commit -m "feat: who-said-that definition — submit, guess, reveal"`
+- [x] **Step 3: PASS, lint, commit** — `git commit -m "feat: who-said-that definition — submit, guess, reveal"`
 
 ---
 
@@ -1384,7 +1384,7 @@ export const whoSaidThat: GameDefinition<WstState, WstSettings, WstPrompt> = {
 
 **Files:** mirror Task 3 — `packages/content/src/whoSaidThat.ts`, `WstHost.tsx`, `WstPlay.tsx`, registry + switches.
 
-- [ ] **Step 1: Content** (`ContentPack<WstPrompt>` ×3, ids `wst-*-v1`; questions ask for short personal answers)
+- [x] **Step 1: Content** (`ContentPack<WstPrompt>` ×3, ids `wst-*-v1`; questions ask for short personal answers)
 
 ```ts
 // family: 'What did you want to be when you were five?', 'What's your weirdest food combo?',
@@ -1404,15 +1404,15 @@ export const whoSaidThat: GameDefinition<WstState, WstSettings, WstPrompt> = {
 // 'What's your toxic trait in relationships?', 'Describe your ex in exactly three words'
 ```
 
-- [ ] **Step 2: Components**
+- [x] **Step 2: Components**
 
 `WstPlay.tsx` — answer phase: prompt + `<textarea maxLength={140}>` + submit button (disabled after `view.submitted`, showing "Answer in — waiting for the others…"). Guess phase: show `answerText` in a big quote card; if `view.isYours` show "This one's yours 🤫 act natural"; else render candidate buttons like `MltPlay` (`onGuess(id)` → `input({ authorId: id })`). Reveal: answer card + "— {authorNickname}", list `correctGuessers` ("Got it: Ana, Cy" or "Nobody guessed it! +2 for {author}"). Finished: `<Leaderboard rows={view.leaderboard} unit="points" />`.
 
 `WstHost.tsx` — answer: prompt big + `answeredCount/totalPlayers` + Countdown. Guess: giant quote card with `answerText`, "Who said that?" heading, `guessedCount/totalGuessers` + Countdown. Reveal: author name huge, correct guessers, running leaderboard, Next (`onAdvance`). Finished: leaderboard + Back to lobby (`onEnd`). Follow `MltHost.tsx` structure and classes.
 
-- [ ] **Step 3: Register** — server definitions map + both switches (`onVote`-style wiring: `input({ text })` in answer phase comes from the textarea submit; `input({ authorId })` from candidate taps — `GamePlay.tsx` passes the raw `input` function to `WstPlay`).
+- [x] **Step 3: Register** — server definitions map + both switches (`onVote`-style wiring: `input({ text })` in answer phase comes from the textarea submit; `input({ authorId })` from candidate taps — `GamePlay.tsx` passes the raw `input` function to `WstPlay`).
 
-- [ ] **Step 4: Verify, commit**
+- [x] **Step 4: Verify, commit**
 
 ```bash
 pnpm test && pnpm --filter @hpg/web build && pnpm lint
@@ -1423,16 +1423,16 @@ git add -A && git commit -m "feat: who-said-that content, screens, and registrat
 
 ### Task 8: E2E + manual verification + milestone
 
-- [ ] **Step 1: One more e2e** — `apps/web/e2e/most-likely-to.spec.ts`: clone the WYR spec's join flow with 3 players, pick "Most Likely To" before starting, each player taps the first candidate button, assert the host shows the tally reveal ("Next" button visible).
+- [x] **Step 1: One more e2e** — `apps/web/e2e/most-likely-to.spec.ts`: clone the WYR spec's join flow with 3 players, pick "Most Likely To" before starting, each player taps the first candidate button, assert the host shows the tally reveal ("Next" button visible).
 
-- [ ] **Step 2:** `pnpm test && pnpm lint && pnpm --filter @hpg/web e2e` — all green.
+- [x] **Step 2:** `pnpm test && pnpm lint && pnpm --filter @hpg/web e2e` — all green.
 
-- [ ] **Step 3: Manual verification** — one real session per game (host + 3 phone windows):
+- [x] **Step 3: Manual verification** — one real session per game (host + 3 phone windows):
   - MLT: self not in candidate list; anonymous reveal shows counts only.
   - NHIE: answers hidden until reveal; reveal names correct; play once with `revealMode: 'count'` by temporarily changing the default and confirm anonymity (settings UI arrives in plan 5).
   - WST: author sees "yours — act natural"; author can't guess; fooling points awarded; reload a phone mid-guess and confirm seat restore.
 
-- [ ] **Step 4: Tag** — `git tag plan-3-four-games`
+- [x] **Step 4: Tag** — `git tag plan-3-four-games`
 
 ---
 
@@ -1441,3 +1441,13 @@ git add -A && git commit -m "feat: who-said-that content, screens, and registrat
 - **Spec coverage (plan-3 slice):** Most Likely To with anonymous-voting setting ✓; Never Have I Ever reveal modes (names/count = spec's anonymous mode), Story-Time hook deferred, elimination/strikes mode ✓; Who Said That submission→guess→reveal with author info-hiding ✓; all as pure definitions on the unchanged engine ✓; content ×3 tones each ✓.
 - **Known deferrals:** per-game settings UI (rounds/reveal-mode/elimination toggles on the host screen) is plan 5 polish; defaults are sensible meanwhile.
 - **Type consistency:** all three definitions implement `GameDefinition<State, Settings, Prompt>` from plan 2 Task 1 exactly; views passed through the plan-2 `RoomStateMsg.game.view` channel; no engine changes anywhere.
+
+---
+
+## Deviations (recorded during execution)
+
+Executor: direct-implementation session on 2026-07-14, continuing from plan 2's environment.
+
+- **MLT e2e uses `getByText(name, { exact: true })`.** Plain `getByText('Cy')` matches both the player pill and the `spicy 🔞` tone-picker button. `exact: true` disambiguates; runtime UI text unchanged.
+- **NhiePlay eliminated view uses `You&apos;re out` (HTML entity).** React/Next lint rejects raw apostrophes in JSX text; the encoding renders identically.
+- No wire-shape, error-string, or event-name changes vs the plan.
