@@ -16,6 +16,7 @@ export function BluffPlay({
 }) {
   const [draft, setDraft] = useState('')
   const [truthMatch, setTruthMatch] = useState(false)
+  const [submissionError, setSubmissionError] = useState(false)
   const [awaiting, setAwaiting] = useState(false)
 
   if (view.phase === 'finished') {
@@ -42,12 +43,18 @@ export function BluffPlay({
       const bluff = draft.trim()
       if (!bluff) return
       setTruthMatch(false)
+      setSubmissionError(false)
       setAwaiting(true)
-      const result = await onSubmitBluff(bluff)
-      setAwaiting(false)
-      setTruthMatch(
-        result.ok && !result.accepted && result.reason === 'matches-truth',
-      )
+      try {
+        const result = await onSubmitBluff(bluff)
+        if (!result.ok) setSubmissionError(true)
+        else if (!result.accepted && result.reason === 'matches-truth') setTruthMatch(true)
+        else if (!result.accepted) setSubmissionError(true)
+      } catch {
+        setSubmissionError(true)
+      } finally {
+        setAwaiting(false)
+      }
     }
     return (
       <div className="space-y-4 text-center">
@@ -73,6 +80,11 @@ export function BluffPlay({
         {truthMatch && (
           <p role="alert" className="text-amber-300">
             That&apos;s the real answer — too easy! Try another.
+          </p>
+        )}
+        {submissionError && (
+          <p role="alert" className="text-red-400">
+            Couldn&apos;t submit that. Check your connection and try again.
           </p>
         )}
       </div>

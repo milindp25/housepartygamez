@@ -26,8 +26,17 @@ import { BluffPlay } from './BluffPlay'
  * component — no other join-page changes.
  */
 export function GamePlay({ gameId, view }: { gameId: GameId; view: unknown }) {
-  const input = (payload: unknown): Promise<GameInputResult> =>
-    new Promise((resolve) => getSocket().emit('game:input', { input: payload }, resolve))
+  const input = (payload: unknown): Promise<GameInputResult> => {
+    const socket = getSocket()
+    if (!socket.connected) {
+      return Promise.resolve({ ok: false, error: 'Game input connection unavailable' })
+    }
+    return new Promise((resolve) =>
+      socket.timeout(3_000).emit('game:input', { input: payload }, (error, result) =>
+        resolve(error ? { ok: false, error: 'Game input acknowledgement timed out' } : result),
+      ),
+    )
+  }
   switch (gameId) {
     case 'would-you-rather':
       return <WyrPlay view={view as WyrPlayerView} onVote={(choice) => input({ choice })} />

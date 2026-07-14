@@ -189,6 +189,12 @@ test('host + three players play a Bluff Battle round without pre-reveal leaks', 
   await expect(differentResult).toContainText('By Cy')
   await expect(differentResult).toContainText('Picked by Ana')
   await expect(host.getByText('Picked by Ben').locator('..')).toContainText('✓ truth')
+  const playerSharedResult = playerPages[0].getByText('Shared nonsense', { exact: true }).locator('..')
+  await expect(playerSharedResult).toContainText('By Ana, Ben')
+  const playerDifferentResult = playerPages[0]
+    .getByText('Different nonsense', { exact: true })
+    .locator('..')
+  await expect(playerDifferentResult).toContainText('By Cy')
   await expect(playerPages[0].getByText('Fooled: Cy')).toBeVisible()
   await expect(playerPages[0].getByText('Fooled: Ana')).toBeVisible()
   await expect(playerPages[0].getByText('Fooled: Ben')).toBeVisible()
@@ -202,11 +208,55 @@ test('host + three players play a Bluff Battle round without pre-reveal leaks', 
   await host.getByRole('button', { name: 'Next', exact: true }).click()
   await expect(host.getByText('Best bluffers & truth seekers')).toBeVisible()
   for (const page of playerPages) await expect(page.getByText('Final results')).toBeVisible()
+  for (const page of [host, ...playerPages]) {
+    await expect(page.getByRole('listitem').filter({ hasText: 'Ben' })).toContainText('3 pts')
+    await expect(page.getByRole('listitem').filter({ hasText: 'Ana' })).toContainText('1 pts')
+    await expect(page.getByRole('listitem').filter({ hasText: 'Cy' })).toContainText('1 pts')
+  }
 
   await host.getByRole('button', { name: 'Back to lobby' }).click()
   await expect(host.getByTestId('room-code')).toHaveText(code)
   for (const page of playerPages) {
     await expect(page.getByText('Waiting for the host to start…')).toBeVisible()
   }
+  controller.disconnect()
+})
+
+test('a missing input acknowledgement shows a retryable error and re-enables submission', async ({
+  browser,
+}) => {
+  const host = await (await browser.newContext()).newPage()
+  await host.goto('/host')
+  const code = await host.getByTestId('room-code').innerText()
+
+  const anaContext = await browser.newContext()
+  const ana = await anaContext.newPage()
+  await join(ana, code, 'Ana')
+  for (const name of ['Ben', 'Cy']) {
+    const page = await (await browser.newContext()).newPage()
+    await join(page, code, name)
+  }
+  await expect(host.getByText('Cy', { exact: true })).toBeVisible()
+
+  const controller = io('http://localhost:4000', { transports: ['websocket'] })
+  expect(await controller.emitWithAck('room:watch', { code })).toMatchObject({ ok: true })
+  expect(
+    await controller.emitWithAck('game:start', {
+      gameId: 'bluff-battle',
+      tone: 'family',
+      rounds: 1,
+    }),
+  ).toEqual({ ok: true })
+  await expect(ana.getByPlaceholder('Your bluff (max 100 chars)')).toBeVisible()
+
+  await anaContext.setOffline(true)
+  await ana.getByPlaceholder('Your bluff (max 100 chars)').fill('Connection test bluff')
+  await ana.getByRole('button', { name: 'Submit bluff' }).click()
+  await expect(ana.getByText("Couldn't submit that. Check your connection and try again.")).toBeVisible({
+    timeout: 8_000,
+  })
+  await expect(ana.getByRole('button', { name: 'Submit bluff' })).toBeEnabled()
+
+  await anaContext.setOffline(false)
   controller.disconnect()
 })
