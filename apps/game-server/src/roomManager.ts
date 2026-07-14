@@ -1,4 +1,4 @@
-import { generateRoomCode, type RoomView } from '@hpg/shared'
+import { generateRoomCode, type RoomStateMsg } from '@hpg/shared'
 
 /**
  * A player's server-side seat in a room. Unlike the public `PlayerInfo` broadcast
@@ -158,13 +158,17 @@ export class RoomManager {
   }
 
   /**
-   * Project a room to the public {@link RoomView} broadcast to clients, stripping
-   * private fields (notably each player's `token`).
+   * Project a room to the public {@link RoomStateMsg} broadcast to clients,
+   * stripping private fields (notably each player's `token`).
+   *
+   * Task 6 replaces this with `toHostState`/`toPlayerState` (personalized per
+   * recipient) once the game lifecycle lands; for now it emits the lobby
+   * shape so socket wiring keeps compiling as the rename ripples through.
    *
    * @param room - The room to project.
    * @returns The client-safe view of the room.
    */
-  toView(room: Room): RoomView {
+  toView(room: Room): RoomStateMsg {
     return {
       code: room.code,
       phase: 'lobby',

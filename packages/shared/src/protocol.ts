@@ -1,3 +1,6 @@
+import type { GameId } from './engine/types'
+import type { PackTone } from './engine/content'
+
 /**
  * A single player's public presence in a room. Contains no secrets, so it is
  * safe to broadcast to every connected client.
@@ -8,11 +11,20 @@ export interface PlayerInfo {
   connected: boolean
 }
 
-/** What every client renders. Lobby has no secrets, so one view for all. */
-export interface RoomView {
+/**
+ * The per-recipient room snapshot.
+ *
+ * When a game is running, `game.view` is PERSONALIZED (`hostView` for host
+ * screens, `playerView` for players) — so two sockets in the same room
+ * receive different `RoomStateMsg` payloads. This is the info-hiding
+ * mechanism every hidden-information game (Imposter, Mafia, Bluff Battle)
+ * relies on.
+ */
+export interface RoomStateMsg {
   code: string
-  phase: 'lobby'
+  phase: 'lobby' | 'game'
   players: PlayerInfo[]
+  game?: { id: GameId; view: unknown }
 }
 
 /**
@@ -21,14 +33,22 @@ export interface RoomView {
  * identity and view or a human-readable failure reason.
  */
 export type JoinResult =
-  { ok: true; playerId: string; view: RoomView } | { ok: false; error: string }
+  { ok: true; playerId: string; view: RoomStateMsg } | { ok: false; error: string }
 
 /**
  * Acknowledgement returned to a host screen that attempted to open a room's
  * public view. The discriminated `ok` flag narrows to either the current view
  * or a human-readable failure reason.
  */
-export type WatchResult = { ok: true; view: RoomView } | { ok: false; error: string }
+export type WatchResult = { ok: true; view: RoomStateMsg } | { ok: false; error: string }
+
+/**
+ * Acknowledgement returned to any client action that can be rejected for
+ * business-rule reasons (start-game, submit-input). Shape mirrors
+ * `JoinResult`/`WatchResult` so callers can treat all room-mutating acks
+ * uniformly.
+ */
+export type StartGameResult = { ok: true } | { ok: false; error: string }
 
 /**
  * Events a client may emit to the server, keyed by event name. Each value is
@@ -45,6 +65,17 @@ export interface ClientToServerEvents {
     payload: { code: string; nickname: string; playerToken: string },
     ack: (res: JoinResult) => void,
   ) => void
+  /** Host starts a game for the current lobby, drawing prompts from a tone-tier pack. */
+  'game:start': (
+    payload: { gameId: GameId; tone: PackTone; rounds?: number },
+    ack: (res: StartGameResult) => void,
+  ) => void
+  /** A player submits game input; the reducer decides validity, so bogus input is a silent no-op. */
+  'game:input': (payload: { input: unknown }, ack: (res: StartGameResult) => void) => void
+  /** Host skips ahead — e.g. everyone's done reading the reveal. */
+  'game:advance': () => void
+  /** Host ends the game and returns the room to the lobby. */
+  'game:end': () => void
 }
 
 /**
@@ -52,6 +83,9 @@ export interface ClientToServerEvents {
  * value is the listener signature Socket.IO enforces on the receiving side.
  */
 export interface ServerToClientEvents {
-  /** Broadcast the room's current public view whenever it changes. */
-  'room:state': (view: RoomView) => void
+  /**
+   * Broadcast the room's current snapshot whenever it changes. The payload is
+   * personalized per socket during game phases (see {@link RoomStateMsg}).
+   */
+  'room:state': (msg: RoomStateMsg) => void
 }

@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import type { RoomView } from '@hpg/shared'
+import type { RoomStateMsg } from '@hpg/shared'
 import { getSocket } from '@/lib/socket'
 
 /**
@@ -10,7 +10,7 @@ import { getSocket } from '@/lib/socket'
  * broadcast, so joins, disconnects, and reconnects appear without a refresh.
  */
 export default function HostPage() {
-  const [view, setView] = useState<RoomView | null>(null)
+  const [view, setView] = useState<RoomStateMsg | null>(null)
 
   useEffect(() => {
     const socket = getSocket()

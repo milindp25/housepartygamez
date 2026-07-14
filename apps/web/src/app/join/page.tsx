@@ -1,7 +1,7 @@
 'use client'
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import type { RoomView } from '@hpg/shared'
+import type { RoomStateMsg } from '@hpg/shared'
 import { getPlayerToken, getSocket } from '@/lib/socket'
 
 /**
@@ -15,7 +15,7 @@ function JoinForm() {
   const [code, setCode] = useState(params.get('code') ?? '')
   const [nickname, setNickname] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [view, setView] = useState<RoomView | null>(null)
+  const [view, setView] = useState<RoomStateMsg | null>(null)
 
   useEffect(() => {
     const socket = getSocket()

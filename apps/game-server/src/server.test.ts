@@ -2,7 +2,12 @@ import { createServer, type Server as HttpServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { io as connect, type Socket } from 'socket.io-client'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { ClientToServerEvents, JoinResult, RoomView, ServerToClientEvents } from '@hpg/shared'
+import type {
+  ClientToServerEvents,
+  JoinResult,
+  RoomStateMsg,
+  ServerToClientEvents,
+} from '@hpg/shared'
 import { attachGameServer } from './server'
 
 type Client = Socket<ServerToClientEvents, ClientToServerEvents>
@@ -17,7 +22,7 @@ function client(): Client {
   return c
 }
 
-function nextState(c: Client): Promise<RoomView> {
+function nextState(c: Client): Promise<RoomStateMsg> {
   return new Promise((resolve) => c.once('room:state', resolve))
 }
 
