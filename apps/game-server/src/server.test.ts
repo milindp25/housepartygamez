@@ -171,4 +171,66 @@ describe('game flow over sockets', () => {
     const res = await p1.emitWithAck('game:start', { gameId: 'would-you-rather', tone: 'friends' })
     expect(res).toEqual({ ok: false, error: 'Only the host can start a game' })
   })
+
+  it('hosts Bluff Battle without leaking truth or authors before reveal', async () => {
+    const host = client()
+    const { code } = await host.emitWithAck('room:create')
+    const phones = [client(), client(), client()]
+    const joins = await Promise.all(
+      phones.map((phone, index) =>
+        phone.emitWithAck('room:join', {
+          code,
+          nickname: ['Ana', 'Ben', 'Cy'][index],
+          playerToken: `bluff-tok-${index}`,
+        }),
+      ),
+    )
+    if (joins.some((join) => !join.ok)) throw new Error('Failed to seat Bluff Battle players')
+
+    const bluffAtHost = nextGamePhase(host, 'bluff')
+    const started = await host.emitWithAck('game:start', {
+      gameId: 'bluff-battle',
+      tone: 'family',
+      rounds: 1,
+    })
+    expect(started).toEqual({ ok: true })
+    expect((await bluffAtHost).game?.view).toMatchObject({
+      phase: 'bluff',
+      submittedCount: 0,
+      totalPlayers: 3,
+    })
+
+    await phones[0].emitWithAck('game:input', { input: { text: 'A sparkle' } })
+    await phones[1].emitWithAck('game:input', { input: { text: 'a sparkle' } })
+    const votes = phones.map((phone) => nextGamePhase(phone, 'vote'))
+    const voteAtHost = nextGamePhase(host, 'vote')
+    await phones[2].emitWithAck('game:input', { input: { text: 'A parade' } })
+
+    const hostView = (await voteAtHost).game?.view as Record<string, unknown>
+    const playerViews = await Promise.all(votes)
+    expect(hostView).toMatchObject({ phase: 'vote', pickedCount: 0, totalPlayers: 3 })
+    expect(JSON.stringify(hostView)).not.toMatch(/isTruth|authorIds/)
+
+    const options = playerViews.map(
+      (message) =>
+        (
+          message.game?.view as {
+            options: Array<{ id: string; text: string; yours: boolean }>
+          }
+        ).options,
+    )
+    expect(options[0]).toHaveLength(3)
+    expect(options[0].filter((option) => option.text.toLowerCase() === 'a sparkle')).toHaveLength(1)
+    expect(options[0].find((option) => option.text.toLowerCase() === 'a sparkle')?.yours).toBe(true)
+    expect(options[1].find((option) => option.text.toLowerCase() === 'a sparkle')?.yours).toBe(true)
+    for (const message of playerViews) {
+      expect(JSON.stringify(message.game?.view)).not.toMatch(/isTruth|authorIds/)
+    }
+
+    const ownOption = options[0].find((option) => option.yours)
+    if (!ownOption) throw new Error('Expected a merged bluff owned by Ana')
+    const afterOwnPick = nextGamePhase(phones[0], 'vote')
+    await phones[0].emitWithAck('game:input', { input: { optionId: ownOption.id } })
+    expect((await afterOwnPick).game?.view).toMatchObject({ yourPick: null })
+  })
 })

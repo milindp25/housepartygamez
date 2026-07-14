@@ -4,12 +4,14 @@ import { mltFamily, mltFriends, mltSpicy } from './mostLikelyTo'
 import { nhieFamily, nhieFriends, nhieSpicy } from './neverHaveIEver'
 import { wstFamily, wstFriends, wstSpicy } from './whoSaidThat'
 import { impFamily, impFriends, impSpicy } from './imposter'
+import { bluffFamily, bluffFriends, bluffSpicy } from './bluffBattle'
 
 export * from './wouldYouRather'
 export * from './mostLikelyTo'
 export * from './neverHaveIEver'
 export * from './whoSaidThat'
 export * from './imposter'
+export * from './bluffBattle'
 
 /**
  * Registry of built-in packs. Plans 3+ add the other games alongside
@@ -22,6 +24,7 @@ const registry: Partial<Record<GameId, Partial<Record<PackTone, ContentPack<unkn
   'never-have-i-ever': { family: nhieFamily, friends: nhieFriends, spicy: nhieSpicy },
   'who-said-that': { family: wstFamily, friends: wstFriends, spicy: wstSpicy },
   imposter: { family: impFamily, friends: impFriends, spicy: impSpicy },
+  'bluff-battle': { family: bluffFamily, friends: bluffFriends, spicy: bluffSpicy },
 }
 
 /**

@@ -1,5 +1,6 @@
 'use client'
 import type {
+  BluffPlayerView,
   GameId,
   ImposterPlayerView,
   MltPlayerView,
@@ -13,6 +14,7 @@ import { MltPlay } from './MltPlay'
 import { NhiePlay } from './NhiePlay'
 import { WstPlay } from './WstPlay'
 import { ImposterPlay } from './ImposterPlay'
+import { BluffPlay } from './BluffPlay'
 
 /**
  * Routes the personalized player view to the right game's phone renderer.
@@ -47,6 +49,14 @@ export function GamePlay({ gameId, view }: { gameId: GameId; view: unknown }) {
           view={view as ImposterPlayerView}
           onReady={() => input({ ready: true })}
           onVote={(suspectId) => input({ suspectId })}
+        />
+      )
+    case 'bluff-battle':
+      return (
+        <BluffPlay
+          view={view as BluffPlayerView}
+          onSubmitBluff={(text) => input({ text })}
+          onPick={(optionId) => input({ optionId })}
         />
       )
     default:

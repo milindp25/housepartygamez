@@ -1,5 +1,6 @@
 'use client'
 import type {
+  BluffHostView,
   GameId,
   ImposterHostView,
   MltHostView,
@@ -12,6 +13,7 @@ import { MltHost } from './MltHost'
 import { NhieHost } from './NhieHost'
 import { WstHost } from './WstHost'
 import { ImposterHost } from './ImposterHost'
+import { BluffHost } from './BluffHost'
 
 export interface GameHostProps {
   gameId: GameId
@@ -42,6 +44,8 @@ export function GameHost({ gameId, view, onAdvance, onEnd }: GameHostProps) {
       return (
         <ImposterHost view={view as ImposterHostView} onAdvance={onAdvance} onEnd={onEnd} />
       )
+    case 'bluff-battle':
+      return <BluffHost view={view as BluffHostView} onAdvance={onAdvance} onEnd={onEnd} />
     default:
       return <p>Unknown game: {gameId}</p>
   }

@@ -482,7 +482,7 @@ export const bluffBattle: GameDefinition<BluffState, BluffSettings, BluffPrompt>
 
 ### Task 2: Content + UI + registration
 
-- [ ] **Step 1: Q&A packs** — `packages/content/src/bluffBattle.ts`, `ContentPack<BluffPrompt>` ×3 (`bluff-family-v1`…, ids `blf-fam-N`…):
+- [x] **Step 1: Q&A packs** — `packages/content/src/bluffBattle.ts`, `ContentPack<BluffPrompt>` ×3 (`bluff-family-v1`…, ids `blf-fam-N`…):
 
 ```ts
 // family (question / answer):
@@ -521,13 +521,13 @@ export const bluffBattle: GameDefinition<BluffState, BluffSettings, BluffPrompt>
 ```
 Register under `'bluff-battle'`.
 
-- [ ] **Step 2: Components** — follow the `WstPlay`/`WstHost` pattern (textarea submit, option buttons):
+- [x] **Step 2: Components** — follow the `WstPlay`/`WstHost` pattern (textarea submit, option buttons):
   - `BluffPlay.tsx`: **bluff** — question + input (maxLength 100) + submit; after submit "Bluff locked in 😈". Show the server no-op case: if submit doesn't stick (view still `submitted: false`), surface "That's the real answer — too easy! Try another." (client mirrors the reducer's truth-match rule for UX; server stays authoritative). **vote** — option buttons; `yours: true` options rendered disabled with a "yours" badge; tap → `input({ optionId })`. **reveal** — truth highlighted, each option with authors + who fell for it. **finished** — leaderboard.
   - `BluffHost.tsx`: **bluff** — question big + submitted counter + Countdown. **vote** — options grid (no truth marking!), picked counter + Countdown. **reveal** — truth banner, per-option authors/pickedBy, leaderboard, Next. **finished** — leaderboard + Back to lobby.
 
-- [ ] **Step 3: Register** — definitions map, both switches, `GAMES` list.
+- [x] **Step 3: Register** — definitions map, both switches, `GAMES` list.
 
-- [ ] **Step 4: Verify + tag**
+- [x] **Step 4: Verify + tag**
 
 ```bash
 pnpm test && pnpm --filter @hpg/web build && pnpm lint

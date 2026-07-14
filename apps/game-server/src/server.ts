@@ -1,6 +1,7 @@
 import type { Server as HttpServer } from 'node:http'
 import { Server } from 'socket.io'
 import {
+  bluffBattle,
   imposter,
   mostLikelyTo,
   neverHaveIEver,
@@ -39,6 +40,7 @@ const definitions: Partial<Record<GameId, AnyGameDefinition>> = {
   'never-have-i-ever': neverHaveIEver,
   'who-said-that': whoSaidThat,
   imposter,
+  'bluff-battle': bluffBattle,
 }
 
 /**
