@@ -192,6 +192,13 @@ export const neverHaveIEver: GameDefinition<NhieState, NhieSettings, NhiePrompt>
         const everyone = active(next).every((p) => answers[state.round - 1][p.id] !== undefined)
         return everyone ? toReveal(next, action.now) : next
       }
+      case 'PLAYER_CONNECTION_CHANGED':
+        return {
+          ...state,
+          players: state.players.map((player) =>
+            player.id === action.playerId ? { ...player, connected: action.connected } : player,
+          ),
+        }
       case 'TIMER_EXPIRED':
       case 'HOST_ADVANCE':
         if (state.phase === 'answer') return toReveal(state, action.now)

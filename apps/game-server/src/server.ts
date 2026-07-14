@@ -253,6 +253,11 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
       if (!room) return
       const player = room.players.find((p) => p.token === playerToken)
       log.info({ event: 'player_disconnected', roomCode, playerId: player?.id })
+      if (room.game) {
+        timers.reschedule(roomCode, room.game.state.deadline, () =>
+          dispatch(roomCode, { type: 'TIMER_EXPIRED', now: Date.now() }),
+        )
+      }
       broadcastRoom(room)
     })
   })

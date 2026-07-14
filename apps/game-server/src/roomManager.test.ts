@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { wouldYouRather } from '@hpg/shared'
+import { bluffBattle, wouldYouRather, type BluffPlayerView, type BluffState } from '@hpg/shared'
 import { RoomManager } from './roomManager'
 
 describe('RoomManager', () => {
@@ -147,6 +147,101 @@ describe('RoomManager game lifecycle', () => {
         wouldYouRather.defaultSettings,
       ),
     ).toEqual({ error: 'Game already running' })
+  })
+
+  it('counts only connected seats toward a game minimum', () => {
+    const rooms = new RoomManager()
+    const room = seatedRoom(rooms)
+    rooms.setConnected(room.code, 'tok-b', false)
+    expect(
+      rooms.startGame(
+        room.code,
+        wouldYouRather,
+        [{ id: 'q1', a: 'A', b: 'B' }],
+        wouldYouRather.defaultSettings,
+      ),
+    ).toEqual({ error: 'Need at least 2 players' })
+  })
+
+  it('propagates disconnect and reconnect into active game views', () => {
+    const rooms = new RoomManager()
+    const room = rooms.createRoom()
+    rooms.join(room.code, 'Ana', 'tok-a')
+    rooms.join(room.code, 'Ben', 'tok-b')
+    rooms.join(room.code, 'Cy', 'tok-c')
+    rooms.startGame(
+      room.code,
+      bluffBattle,
+      [{ id: 'q1', question: 'Question?', answer: 'Truth' }],
+      { ...bluffBattle.defaultSettings, rounds: 1 },
+    )
+
+    rooms.setConnected(room.code, 'tok-c', false)
+    expect(rooms.toHostState(room).game?.view).toMatchObject({
+      phase: 'bluff',
+      totalPlayers: 2,
+    })
+    rooms.setConnected(room.code, 'tok-c', true)
+    expect(rooms.toHostState(room).game?.view).toMatchObject({
+      phase: 'bluff',
+      totalPlayers: 3,
+    })
+  })
+
+  it('advances Bluff phases when only disconnected players remain outstanding', () => {
+    const rooms = new RoomManager()
+    const room = rooms.createRoom()
+    const joined = [
+      rooms.join(room.code, 'Ana', 'tok-a'),
+      rooms.join(room.code, 'Ben', 'tok-b'),
+      rooms.join(room.code, 'Cy', 'tok-c'),
+    ]
+    if (joined.some((result) => 'error' in result)) throw new Error('join failed')
+    const [ana, ben] = joined.map((result) => ('player' in result ? result.player : undefined))
+    if (!ana || !ben) throw new Error('missing players')
+    rooms.startGame(
+      room.code,
+      bluffBattle,
+      [{ id: 'q1', question: 'Question?', answer: 'Truth' }],
+      { ...bluffBattle.defaultSettings, rounds: 1 },
+    )
+    rooms.applyGameAction(room.code, {
+      type: 'PLAYER_INPUT',
+      playerId: ana.id,
+      input: { text: 'Ana bluff' },
+      now: Date.now(),
+    })
+    rooms.applyGameAction(room.code, {
+      type: 'PLAYER_INPUT',
+      playerId: ben.id,
+      input: { text: 'Ben bluff' },
+      now: Date.now(),
+    })
+    rooms.setConnected(room.code, 'tok-c', false)
+    expect(rooms.toHostState(room).game?.view).toMatchObject({ phase: 'vote', totalPlayers: 2 })
+    expect((room.game?.state as BluffState).bluffs).toMatchObject({
+      [ana.id]: 'Ana bluff',
+      [ben.id]: 'Ben bluff',
+    })
+
+    rooms.setConnected(room.code, 'tok-c', true)
+    const anaView = rooms.toPlayerState(room, 'tok-a')?.game?.view as BluffPlayerView
+    const benView = rooms.toPlayerState(room, 'tok-b')?.game?.view as BluffPlayerView
+    if (anaView.phase !== 'vote' || benView.phase !== 'vote') throw new Error('vote view missing')
+    rooms.applyGameAction(room.code, {
+      type: 'PLAYER_INPUT',
+      playerId: ana.id,
+      input: { optionId: anaView.options.find((option) => !option.yours)!.id },
+      now: Date.now(),
+    })
+    rooms.applyGameAction(room.code, {
+      type: 'PLAYER_INPUT',
+      playerId: ben.id,
+      input: { optionId: benView.options.find((option) => !option.yours)!.id },
+      now: Date.now(),
+    })
+    rooms.setConnected(room.code, 'tok-c', false)
+    expect(rooms.toHostState(room).game?.view).toMatchObject({ phase: 'reveal' })
   })
 
   it('applies player input through the reducer and reflects it in views', () => {

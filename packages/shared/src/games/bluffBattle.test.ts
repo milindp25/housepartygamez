@@ -21,6 +21,14 @@ function bluff(s: BluffState, playerId: string, text: string): BluffState {
 function pick(s: BluffState, playerId: string, optionId: string): BluffState {
   return bluffBattle.reducer(s, { type: 'PLAYER_INPUT', playerId, input: { optionId }, now: T0 })
 }
+function connected(s: BluffState, playerId: string, value: boolean): BluffState {
+  return bluffBattle.reducer(s, {
+    type: 'PLAYER_CONNECTION_CHANGED',
+    playerId,
+    connected: value,
+    now: T0,
+  })
+}
 
 describe('bluff-battle', () => {
   it('collects bluffs; rejects blanks, >100 chars, and the real answer', () => {
@@ -32,6 +40,14 @@ describe('bluff-battle', () => {
     expect(Object.keys(s.bluffs)).toHaveLength(0)
     s = bluff(s, 'p1', 'A flock')
     expect(s.bluffs.p1).toBe('A flock')
+  })
+
+  it('locks the first bluff and does not expose truth-match reasons after submission', () => {
+    const accepted = bluff(fresh(), 'p1', 'A flock')
+    expect(bluff(accepted, 'p1', 'A stand')).toBe(accepted)
+    expect(bluff(accepted, 'p1', 'Flamboyance')).toBe(accepted)
+    expect(accepted.bluffs.p1).toBe('A flock')
+    expect(bluffBattle.inputRejection?.(accepted, 'p1', { text: 'Flamboyance' })).toBeUndefined()
   })
 
   it('builds vote options once everyone bluffed: truth + deduped bluffs', () => {
@@ -87,6 +103,51 @@ describe('bluff-battle', () => {
     const before = s
     s = pick(s, 'p1', own.id)
     expect(s).toEqual(before)
+  })
+
+  it('locks the first accepted vote', () => {
+    let s = bluff(fresh(), 'p1', 'A flock')
+    s = bluff(s, 'p2', 'A stand')
+    s = bluff(s, 'p3', 'A blush')
+    const first = s.options.find((option) => !option.authorIds.includes('p1'))!
+    const second = s.options.find(
+      (option) => option.id !== first.id && !option.authorIds.includes('p1'),
+    )!
+    const accepted = pick(s, 'p1', first.id)
+    expect(pick(accepted, 'p1', second.id)).toBe(accepted)
+    expect(accepted.picks.p1).toBe(first.id)
+  })
+
+  it('uses live connections for bluff completion and counters while preserving submissions', () => {
+    let s = bluff(fresh(), 'p1', 'A flock')
+    s = connected(s, 'p3', false)
+    expect(bluffBattle.hostView(s)).toMatchObject({
+      phase: 'bluff',
+      submittedCount: 1,
+      totalPlayers: 2,
+    })
+    s = connected(s, 'p3', true)
+    expect(bluffBattle.hostView(s)).toMatchObject({
+      phase: 'bluff',
+      submittedCount: 1,
+      totalPlayers: 3,
+    })
+    s = bluff(s, 'p2', 'A stand')
+    s = connected(s, 'p3', false)
+    expect(s.phase).toBe('vote')
+    expect(s.bluffs.p1).toBe('A flock')
+  })
+
+  it('does not require a disconnected player to finish voting', () => {
+    let s = bluff(fresh(), 'p1', 'A flock')
+    s = bluff(s, 'p2', 'A stand')
+    s = bluff(s, 'p3', 'A blush')
+    const pickable = (playerId: string) =>
+      s.options.find((option) => !option.authorIds.includes(playerId))!.id
+    s = pick(s, 'p1', pickable('p1'))
+    s = pick(s, 'p2', pickable('p2'))
+    s = connected(s, 'p3', false)
+    expect(s.phase).toBe('reveal')
   })
 
   it('scores +2 for truth-finders and +1 per fooled voter to bluff authors', () => {

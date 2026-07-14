@@ -182,6 +182,13 @@ export const mostLikelyTo: GameDefinition<MltState, MltSettings, MltPrompt> = {
           ? toReveal(next, action.now)
           : next
       }
+      case 'PLAYER_CONNECTION_CHANGED':
+        return {
+          ...state,
+          players: state.players.map((player) =>
+            player.id === action.playerId ? { ...player, connected: action.connected } : player,
+          ),
+        }
       case 'TIMER_EXPIRED':
       case 'HOST_ADVANCE':
         if (state.phase === 'vote') return toReveal(state, action.now)

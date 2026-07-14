@@ -117,7 +117,7 @@ export class RoomManager {
 
     const existing = room.players.find((p) => p.token === token)
     if (existing) {
-      existing.connected = true
+      this.updatePlayerConnection(room, existing, true)
       return { room, player: existing }
     }
 
@@ -139,8 +139,9 @@ export class RoomManager {
   }
 
   /**
-   * Flip a player's connection flag (e.g. on socket disconnect/reconnect) and
-   * bump room activity so a room with a briefly-dropped player is not swept.
+   * Flip a player's connection flag (e.g. on socket disconnect/reconnect),
+   * propagate the change through an active game's reducer, and bump room
+   * activity so a room with a briefly-dropped player is not swept.
    *
    * @param code - The room code, in any case.
    * @param token - The player's seat token.
@@ -151,7 +152,7 @@ export class RoomManager {
     const room = this.getRoom(code)
     const player = room?.players.find((p) => p.token === token)
     if (!room || !player) return undefined
-    player.connected = connected
+    this.updatePlayerConnection(room, player, connected)
     room.lastActivityAt = this.now()
     return room
   }
@@ -209,7 +210,8 @@ export class RoomManager {
     const room = this.getRoom(code)
     if (!room) return { error: 'Room not found' }
     if (room.game) return { error: 'Game already running' }
-    if (room.players.length < definition.minPlayers) {
+    const connectedPlayers = room.players.filter((player) => player.connected)
+    if (connectedPlayers.length < definition.minPlayers) {
       return { error: `Need at least ${definition.minPlayers} players` }
     }
     if (definition.maxPlayers !== undefined && room.players.length > definition.maxPlayers) {
@@ -303,5 +305,16 @@ export class RoomManager {
    */
   toView(room: Room): RoomStateMsg {
     return this.toHostState(room)
+  }
+
+  private updatePlayerConnection(room: Room, player: RoomPlayer, connected: boolean): void {
+    player.connected = connected
+    if (!room.game) return
+    room.game.state = room.game.definition.reducer(room.game.state, {
+      type: 'PLAYER_CONNECTION_CHANGED',
+      playerId: player.id,
+      connected,
+      now: this.now(),
+    })
   }
 }

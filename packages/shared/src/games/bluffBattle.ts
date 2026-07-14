@@ -222,6 +222,7 @@ function inputRejection(
   input: unknown,
 ): GameInputRejectionReason | undefined {
   if (state.phase !== 'bluff' || !state.players.some((player) => player.id === playerId)) return
+  if (state.bluffs[playerId] !== undefined) return
   const text = (input as { text?: unknown })?.text
   if (typeof text !== 'string') return
   return normalize(text) === normalize(prompt(state).answer) ? 'matches-truth' : undefined
@@ -257,6 +258,7 @@ export const bluffBattle: GameDefinition<BluffState, BluffSettings, BluffPrompt>
         if (!state.players.some((p) => p.id === action.playerId)) return state
 
         if (state.phase === 'bluff') {
+          if (state.bluffs[action.playerId] !== undefined) return state
           const text = (action.input as { text?: unknown })?.text
           if (typeof text !== 'string') return state
           const trimmed = text.trim()
@@ -269,6 +271,7 @@ export const bluffBattle: GameDefinition<BluffState, BluffSettings, BluffPrompt>
         }
 
         if (state.phase === 'vote') {
+          if (state.picks[action.playerId] !== undefined) return state
           const optionId = (action.input as { optionId?: unknown })?.optionId
           if (typeof optionId !== 'string') return state
           const option = state.options.find((o) => o.id === optionId)
@@ -278,6 +281,30 @@ export const bluffBattle: GameDefinition<BluffState, BluffSettings, BluffPrompt>
           return active(next).every((p) => picks[p.id]) ? toReveal(next, action.now) : next
         }
         return state
+      }
+      case 'PLAYER_CONNECTION_CHANGED': {
+        const next = {
+          ...state,
+          players: state.players.map((player) =>
+            player.id === action.playerId ? { ...player, connected: action.connected } : player,
+          ),
+        }
+        const connectedPlayers = active(next)
+        if (
+          connectedPlayers.length > 0 &&
+          next.phase === 'bluff' &&
+          connectedPlayers.every((player) => next.bluffs[player.id])
+        ) {
+          return toVote(next, action.now)
+        }
+        if (
+          connectedPlayers.length > 0 &&
+          next.phase === 'vote' &&
+          connectedPlayers.every((player) => next.picks[player.id])
+        ) {
+          return toReveal(next, action.now)
+        }
+        return next
       }
       case 'TIMER_EXPIRED':
       case 'HOST_ADVANCE':
@@ -338,7 +365,8 @@ export const bluffBattle: GameDefinition<BluffState, BluffSettings, BluffPrompt>
         round: state.round,
         totalRounds: state.settings.rounds,
         question: q.question,
-        submittedCount: Object.keys(state.bluffs).length,
+        submittedCount: active(state).filter((player) => state.bluffs[player.id] !== undefined)
+          .length,
         totalPlayers: active(state).length,
         deadline: state.deadline,
       }
@@ -350,7 +378,7 @@ export const bluffBattle: GameDefinition<BluffState, BluffSettings, BluffPrompt>
         totalRounds: state.settings.rounds,
         question: q.question,
         options: state.options.map((o) => ({ id: o.id, text: o.text })), // TV shows options, never the truth
-        pickedCount: Object.keys(state.picks).length,
+        pickedCount: active(state).filter((player) => state.picks[player.id] !== undefined).length,
         totalPlayers: active(state).length,
         deadline: state.deadline,
       }

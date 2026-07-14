@@ -250,6 +250,16 @@ describe('game flow over sockets', () => {
       ok: true,
       accepted: true,
     })
+    expect(await phones[0].emitWithAck('game:input', { input: { text: 'A replacement' } })).toEqual(
+      {
+        ok: true,
+        accepted: false,
+      },
+    )
+    expect(await phones[0].emitWithAck('game:input', { input: { text: truth } })).toEqual({
+      ok: true,
+      accepted: false,
+    })
     expect(await phones[1].emitWithAck('game:input', { input: { text: 'a sparkle' } })).toEqual({
       ok: true,
       accepted: true,
@@ -310,5 +320,16 @@ describe('game flow over sockets', () => {
       await phones[0].emitWithAck('game:input', { input: { optionId: ownOption.id } }),
     ).toEqual({ ok: true, accepted: false })
     expect((await afterOwnPick).game?.view).toMatchObject({ yourPick: null })
+
+    const firstPick = options[0].find((option) => !option.yours)!
+    expect(
+      await phones[0].emitWithAck('game:input', { input: { optionId: firstPick.id } }),
+    ).toEqual({ ok: true, accepted: true })
+    const secondPick = options[0].find((option) => !option.yours && option.id !== firstPick.id)!
+    const afterOverwrite = nextGamePhase(phones[0], 'vote')
+    expect(
+      await phones[0].emitWithAck('game:input', { input: { optionId: secondPick.id } }),
+    ).toEqual({ ok: true, accepted: false })
+    expect((await afterOverwrite).game?.view).toMatchObject({ yourPick: firstPick.id })
   })
 })

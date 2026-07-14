@@ -31,6 +31,12 @@ export interface GamePlayer {
  */
 export type GameAction =
   | { type: 'PLAYER_INPUT'; playerId: string; input: unknown; now: number }
+  | {
+      type: 'PLAYER_CONNECTION_CHANGED'
+      playerId: string
+      connected: boolean
+      now: number
+    }
   | { type: 'TIMER_EXPIRED'; now: number }
   | { type: 'HOST_ADVANCE'; now: number }
 

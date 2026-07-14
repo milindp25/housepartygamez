@@ -188,6 +188,13 @@ export const wouldYouRather: GameDefinition<WyrState, WyrSettings, WyrPrompt> = 
         const everyoneVoted = activePlayers(next).every((p) => votes[state.round - 1][p.id])
         return everyoneVoted ? toReveal(next, action.now) : next
       }
+      case 'PLAYER_CONNECTION_CHANGED':
+        return {
+          ...state,
+          players: state.players.map((player) =>
+            player.id === action.playerId ? { ...player, connected: action.connected } : player,
+          ),
+        }
       case 'TIMER_EXPIRED':
       case 'HOST_ADVANCE': {
         if (state.phase === 'vote') return toReveal(state, action.now)

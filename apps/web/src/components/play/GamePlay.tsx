@@ -62,14 +62,17 @@ export function GamePlay({ gameId, view }: { gameId: GameId; view: unknown }) {
           onVote={(suspectId) => input({ suspectId })}
         />
       )
-    case 'bluff-battle':
+    case 'bluff-battle': {
+      const bluffView = view as BluffPlayerView
       return (
         <BluffPlay
-          view={view as BluffPlayerView}
+          key={bluffView.phase === 'finished' ? 'finished' : bluffView.round}
+          view={bluffView}
           onSubmitBluff={(text) => input({ text })}
           onPick={(optionId) => input({ optionId })}
         />
       )
+    }
     default:
       return <p>Unknown game: {gameId}</p>
   }

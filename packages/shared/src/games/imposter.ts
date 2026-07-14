@@ -272,6 +272,13 @@ export const imposter: GameDefinition<ImposterState, ImposterSettings, ImposterP
         }
         return state
       }
+      case 'PLAYER_CONNECTION_CHANGED':
+        return {
+          ...state,
+          players: state.players.map((player) =>
+            player.id === action.playerId ? { ...player, connected: action.connected } : player,
+          ),
+        }
       case 'TIMER_EXPIRED':
       case 'HOST_ADVANCE': {
         if (state.phase === 'word') {
