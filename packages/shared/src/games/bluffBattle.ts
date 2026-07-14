@@ -1,4 +1,9 @@
-import type { GameDefinition, GamePlayer, TimedState } from '../engine/types'
+import type {
+  GameDefinition,
+  GameInputRejectionReason,
+  GamePlayer,
+  TimedState,
+} from '../engine/types'
 
 /** One question and its truthful answer for Bluff Battle. */
 export interface BluffPrompt {
@@ -211,11 +216,24 @@ function results(state: BluffState) {
   }))
 }
 
+function inputRejection(
+  state: BluffState,
+  playerId: string,
+  input: unknown,
+): GameInputRejectionReason | undefined {
+  if (state.phase !== 'bluff' || !state.players.some((player) => player.id === playerId)) return
+  const text = (input as { text?: unknown })?.text
+  if (typeof text !== 'string') return
+  return normalize(text) === normalize(prompt(state).answer) ? 'matches-truth' : undefined
+}
+
 /** Bluff Battle: invent a believable fake answer, then find the real one. */
 export const bluffBattle: GameDefinition<BluffState, BluffSettings, BluffPrompt> = {
   id: 'bluff-battle',
   minPlayers: 3,
   defaultSettings: { rounds: 5, bluffSeconds: 60, voteSeconds: 45, revealSeconds: 15 },
+
+  inputRejection,
 
   init({ players, prompts, settings, now }) {
     return {
@@ -244,7 +262,7 @@ export const bluffBattle: GameDefinition<BluffState, BluffSettings, BluffPrompt>
           const trimmed = text.trim()
           if (!trimmed || trimmed.length > 100) return state
           // A "bluff" equal to the truth would out the real answer — reject it.
-          if (normalize(trimmed) === normalize(prompt(state).answer)) return state
+          if (inputRejection(state, action.playerId, action.input) === 'matches-truth') return state
           const bluffs = { ...state.bluffs, [action.playerId]: trimmed }
           const next = { ...state, bluffs }
           return active(next).every((p) => bluffs[p.id]) ? toVote(next, action.now) : next

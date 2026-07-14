@@ -90,13 +90,15 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
    * deadline, and broadcast personalized snapshots. Silent no-op when the
    * game already ended between the event arriving and being dispatched.
    */
-  function dispatch(code: string, action: GameAction): void {
+  function dispatch(code: string, action: GameAction): boolean {
+    const previousState = rooms.getRoom(code)?.game?.state
     const room = rooms.applyGameAction(code, action)
-    if (!room?.game) return
+    if (!room?.game) return false
     timers.reschedule(code, room.game.state.deadline, () =>
       dispatch(code, { type: 'TIMER_EXPIRED', now: Date.now() }),
     )
     broadcastRoom(room)
+    return room.game.state !== previousState
   }
 
   io.on('connection', (socket) => {
@@ -199,12 +201,31 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
         log.warn({ event: 'game_input_rejected', reason: 'not seated' })
         return ack({ ok: false, error: 'Not seated in a game' })
       }
+      const activeGame = rooms.getRoom(roomCode)?.game
+      const reason = activeGame?.definition.inputRejection?.(activeGame.state, player.id, input)
       // Dispatch (sync broadcast) before ack so the resulting `room:state`
       // reaches every socket in the same tick, ahead of the caller's ack
-      // response. Reducer treats invalid input as a silent no-op, so ack is
-      // unconditionally `ok`.
-      dispatch(roomCode, { type: 'PLAYER_INPUT', playerId: player.id, input, now: Date.now() })
-      ack({ ok: true })
+      // response. `accepted` is correlated to this exact action, so unrelated
+      // room broadcasts cannot be mistaken for its outcome.
+      const accepted = dispatch(roomCode, {
+        type: 'PLAYER_INPUT',
+        playerId: player.id,
+        input,
+        now: Date.now(),
+      })
+      if (!accepted) {
+        log.warn({
+          event: 'game_input_not_applied',
+          roomCode,
+          playerId: player.id,
+          reason: reason ?? 'invalid_input',
+        })
+      }
+      ack(
+        accepted
+          ? { ok: true, accepted: true }
+          : { ok: true, accepted: false, ...(reason && { reason }) },
+      )
     })
 
     socket.on('game:advance', () => {

@@ -2,6 +2,7 @@
 import type {
   BluffPlayerView,
   GameId,
+  GameInputResult,
   ImposterPlayerView,
   MltPlayerView,
   NhiePlayerView,
@@ -25,7 +26,8 @@ import { BluffPlay } from './BluffPlay'
  * component — no other join-page changes.
  */
 export function GamePlay({ gameId, view }: { gameId: GameId; view: unknown }) {
-  const input = (payload: unknown) => getSocket().emit('game:input', { input: payload }, () => {})
+  const input = (payload: unknown): Promise<GameInputResult> =>
+    new Promise((resolve) => getSocket().emit('game:input', { input: payload }, resolve))
   switch (gameId) {
     case 'would-you-rather':
       return <WyrPlay view={view as WyrPlayerView} onVote={(choice) => input({ choice })} />

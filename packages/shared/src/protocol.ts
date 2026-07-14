@@ -1,4 +1,4 @@
-import type { GameId } from './engine/types'
+import type { GameId, GameInputRejectionReason } from './engine/types'
 import type { PackTone } from './engine/content'
 
 /**
@@ -43,12 +43,20 @@ export type JoinResult =
 export type WatchResult = { ok: true; view: RoomStateMsg } | { ok: false; error: string }
 
 /**
- * Acknowledgement returned to any client action that can be rejected for
- * business-rule reasons (start-game, submit-input). Shape mirrors
- * `JoinResult`/`WatchResult` so callers can treat all room-mutating acks
- * uniformly.
+ * Acknowledgement returned when starting a game, including business-rule
+ * failures such as an undersized lobby or unknown content pack.
  */
 export type StartGameResult = { ok: true } | { ok: false; error: string }
+
+/**
+ * Action-correlated acknowledgement for one `game:input`. `accepted` reports
+ * whether the reducer changed authoritative state; a safe optional reason lets
+ * a game explain a rejection without placing secret data in room snapshots.
+ */
+export type GameInputResult =
+  | { ok: true; accepted: true }
+  | { ok: true; accepted: false; reason?: GameInputRejectionReason }
+  | { ok: false; error: string }
 
 /**
  * Events a client may emit to the server, keyed by event name. Each value is
@@ -70,8 +78,8 @@ export interface ClientToServerEvents {
     payload: { gameId: GameId; tone: PackTone; rounds?: number },
     ack: (res: StartGameResult) => void,
   ) => void
-  /** A player submits game input; the reducer decides validity, so bogus input is a silent no-op. */
-  'game:input': (payload: { input: unknown }, ack: (res: StartGameResult) => void) => void
+  /** A player submits input; the acknowledgement is correlated to this exact reducer action. */
+  'game:input': (payload: { input: unknown }, ack: (res: GameInputResult) => void) => void
   /** Host skips ahead — e.g. everyone's done reading the reveal. */
   'game:advance': () => void
   /** Host ends the game and returns the room to the lobby. */

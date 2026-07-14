@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
-import type { BluffPlayerView } from '@hpg/shared'
+import { useState } from 'react'
+import type { BluffPlayerView, GameInputResult } from '@hpg/shared'
 import { Countdown } from '../Countdown'
 import { Leaderboard } from '../Leaderboard'
 
@@ -11,18 +11,12 @@ export function BluffPlay({
   onPick,
 }: {
   view: BluffPlayerView
-  onSubmitBluff: (text: string) => void
+  onSubmitBluff: (text: string) => Promise<GameInputResult>
   onPick: (optionId: string) => void
 }) {
   const [draft, setDraft] = useState('')
   const [truthMatch, setTruthMatch] = useState(false)
-  const submittedAgainst = useRef<BluffPlayerView | null>(null)
-
-  useEffect(() => {
-    if (!submittedAgainst.current || submittedAgainst.current === view) return
-    if (view.phase === 'bluff' && !view.submitted) setTruthMatch(true)
-    submittedAgainst.current = null
-  }, [view])
+  const [awaiting, setAwaiting] = useState(false)
 
   if (view.phase === 'finished') {
     return (
@@ -44,12 +38,16 @@ export function BluffPlay({
         </div>
       )
     }
-    const submit = () => {
+    const submit = async () => {
       const bluff = draft.trim()
       if (!bluff) return
       setTruthMatch(false)
-      submittedAgainst.current = view
-      onSubmitBluff(bluff)
+      setAwaiting(true)
+      const result = await onSubmitBluff(bluff)
+      setAwaiting(false)
+      setTruthMatch(
+        result.ok && !result.accepted && result.reason === 'matches-truth',
+      )
     }
     return (
       <div className="space-y-4 text-center">
@@ -67,10 +65,10 @@ export function BluffPlay({
         />
         <button
           onClick={submit}
-          disabled={!draft.trim()}
+          disabled={!draft.trim() || awaiting}
           className="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-bold disabled:opacity-40"
         >
-          Submit bluff
+          {awaiting ? 'Submitting…' : 'Submit bluff'}
         </button>
         {truthMatch && (
           <p role="alert" className="text-amber-300">

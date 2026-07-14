@@ -34,6 +34,9 @@ export type GameAction =
   | { type: 'TIMER_EXPIRED'; now: number }
   | { type: 'HOST_ADVANCE'; now: number }
 
+/** Stable client-facing reasons for an otherwise valid game input being rejected. */
+export type GameInputRejectionReason = 'matches-truth'
+
 /**
  * Every game state exposes `deadline` (epoch ms, or `null` when waiting on
  * the host). The server watches it and dispatches `TIMER_EXPIRED` when it
@@ -64,6 +67,12 @@ export interface GameDefinition<State extends TimedState, Settings, Prompt> {
   defaultSettings: Settings
   init(args: { players: GamePlayer[]; prompts: Prompt[]; settings: Settings; now: number }): State
   reducer(state: State, action: GameAction): State
+  /** Optionally classify a rejected player input without exposing secret state to the client. */
+  inputRejection?(
+    state: State,
+    playerId: string,
+    input: unknown,
+  ): GameInputRejectionReason | undefined
   playerView(state: State, playerId: string): unknown
   hostView(state: State): unknown
   isFinished(state: State): boolean

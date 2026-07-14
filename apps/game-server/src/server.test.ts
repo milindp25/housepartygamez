@@ -49,6 +49,23 @@ function nextGamePhase(c: Client, phase: string): Promise<RoomStateMsg> {
   })
 }
 
+function expectExactKeys(value: unknown, keys: string[]): void {
+  expect(Object.keys(value as Record<string, unknown>).sort()).toEqual([...keys].sort())
+}
+
+const bluffFamilyAnswers: Record<string, string> = {
+  'A group of flamingos is called a…': 'A flamboyance',
+  'A baby kangaroo is called a…': 'A joey',
+  'The only mammal that can truly fly is the…': 'Bat',
+  'Bananas grow pointing…': 'Upward',
+  'A snail can sleep for up to…': 'Three years',
+  'The dot over a lowercase i is called a…': 'Tittle',
+  'Octopuses have this many hearts…': 'Three',
+  'The Hawaiian pizza was invented in…': 'Canada',
+  'A group of pugs is called a…': 'A grumble',
+  'Honey never…': 'Spoils',
+}
+
 beforeAll(async () => {
   httpServer = createServer()
   attachGameServer(httpServer)
@@ -148,10 +165,16 @@ describe('game flow over sockets', () => {
     expect(hostMsg.phase).toBe('game')
     expect(hostMsg.game?.view).toMatchObject({ phase: 'vote', votedCount: 0, totalPlayers: 2 })
 
-    await p1.emitWithAck('game:input', { input: { choice: 'a' } })
+    expect(await p1.emitWithAck('game:input', { input: { choice: 'a' } })).toEqual({
+      ok: true,
+      accepted: true,
+    })
     const revealAtHost = nextGamePhase(host, 'reveal')
     const revealAtP2 = nextGamePhase(p2, 'reveal')
-    await p2.emitWithAck('game:input', { input: { choice: 'a' } })
+    expect(await p2.emitWithAck('game:input', { input: { choice: 'a' } })).toEqual({
+      ok: true,
+      accepted: true,
+    })
     expect((await revealAtHost).game?.view).toMatchObject({
       phase: 'reveal',
       counts: { a: 2, b: 0 },
@@ -188,28 +211,70 @@ describe('game flow over sockets', () => {
     if (joins.some((join) => !join.ok)) throw new Error('Failed to seat Bluff Battle players')
 
     const bluffAtHost = nextGamePhase(host, 'bluff')
+    const bluffAtPlayers = phones.map((phone) => nextGamePhase(phone, 'bluff'))
     const started = await host.emitWithAck('game:start', {
       gameId: 'bluff-battle',
       tone: 'family',
       rounds: 1,
     })
     expect(started).toEqual({ ok: true })
-    expect((await bluffAtHost).game?.view).toMatchObject({
+    const hostBluffView = (await bluffAtHost).game?.view as Record<string, unknown>
+    const playerBluffViews = (await Promise.all(bluffAtPlayers)).map(
+      (message) => message.game?.view as Record<string, unknown>,
+    )
+    expect(hostBluffView).toMatchObject({
       phase: 'bluff',
       submittedCount: 0,
       totalPlayers: 3,
     })
+    expectExactKeys(hostBluffView, [
+      'phase',
+      'round',
+      'totalRounds',
+      'question',
+      'submittedCount',
+      'totalPlayers',
+      'deadline',
+    ])
+    for (const view of playerBluffViews) {
+      expectExactKeys(view, ['phase', 'round', 'totalRounds', 'question', 'submitted', 'deadline'])
+    }
 
-    await phones[0].emitWithAck('game:input', { input: { text: 'A sparkle' } })
-    await phones[1].emitWithAck('game:input', { input: { text: 'a sparkle' } })
+    const question = hostBluffView.question as string
+    const truth = bluffFamilyAnswers[question]
+    if (!truth) throw new Error(`Unexpected family question: ${question}`)
+    const rejectedTruth = await phones[0].emitWithAck('game:input', { input: { text: truth } })
+    expect(rejectedTruth).toEqual({ ok: true, accepted: false, reason: 'matches-truth' })
+
+    expect(await phones[0].emitWithAck('game:input', { input: { text: 'A sparkle' } })).toEqual({
+      ok: true,
+      accepted: true,
+    })
+    expect(await phones[1].emitWithAck('game:input', { input: { text: 'a sparkle' } })).toEqual({
+      ok: true,
+      accepted: true,
+    })
     const votes = phones.map((phone) => nextGamePhase(phone, 'vote'))
     const voteAtHost = nextGamePhase(host, 'vote')
-    await phones[2].emitWithAck('game:input', { input: { text: 'A parade' } })
+    expect(await phones[2].emitWithAck('game:input', { input: { text: 'A parade' } })).toEqual({
+      ok: true,
+      accepted: true,
+    })
 
     const hostView = (await voteAtHost).game?.view as Record<string, unknown>
     const playerViews = await Promise.all(votes)
     expect(hostView).toMatchObject({ phase: 'vote', pickedCount: 0, totalPlayers: 3 })
-    expect(JSON.stringify(hostView)).not.toMatch(/isTruth|authorIds/)
+    expectExactKeys(hostView, [
+      'phase',
+      'round',
+      'totalRounds',
+      'question',
+      'options',
+      'pickedCount',
+      'totalPlayers',
+      'deadline',
+    ])
+    for (const option of hostView.options as unknown[]) expectExactKeys(option, ['id', 'text'])
 
     const options = playerViews.map(
       (message) =>
@@ -224,13 +289,26 @@ describe('game flow over sockets', () => {
     expect(options[0].find((option) => option.text.toLowerCase() === 'a sparkle')?.yours).toBe(true)
     expect(options[1].find((option) => option.text.toLowerCase() === 'a sparkle')?.yours).toBe(true)
     for (const message of playerViews) {
-      expect(JSON.stringify(message.game?.view)).not.toMatch(/isTruth|authorIds/)
+      const view = message.game?.view as Record<string, unknown>
+      expectExactKeys(view, [
+        'phase',
+        'round',
+        'totalRounds',
+        'question',
+        'options',
+        'yourPick',
+        'deadline',
+      ])
+      for (const option of view.options as unknown[])
+        expectExactKeys(option, ['id', 'text', 'yours'])
     }
 
     const ownOption = options[0].find((option) => option.yours)
     if (!ownOption) throw new Error('Expected a merged bluff owned by Ana')
     const afterOwnPick = nextGamePhase(phones[0], 'vote')
-    await phones[0].emitWithAck('game:input', { input: { optionId: ownOption.id } })
+    expect(
+      await phones[0].emitWithAck('game:input', { input: { optionId: ownOption.id } }),
+    ).toEqual({ ok: true, accepted: false })
     expect((await afterOwnPick).game?.view).toMatchObject({ yourPick: null })
   })
 })
