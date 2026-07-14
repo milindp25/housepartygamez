@@ -1180,3 +1180,19 @@ git tag plan-1-platform-foundation
 - **Spec coverage (plan-1 slice):** room create/join/watch ✓, 4-letter safe-alphabet codes ✓, reconnect via localStorage token ✓, host screen stateless/reopenable (`room:watch`) ✓, 1h idle expiry ✓, in-memory only ✓, unit + socket integration tests ✓, ESLint/Prettier tooling ✓, pino structured JSON logging with event conventions ✓. Deferred to later plans per spec: engine/games, timers advancing gameplay, auth, content packs, QR code on host screen, PostHog analytics (plan 5), Playwright e2e (arrives with the first full game in plan 2).
 - **Types:** `RoomView`/`JoinResult`/`WatchResult` defined once in Task 3 and imported everywhere; `RoomManager` method names consistent across Tasks 4–5.
 - **No placeholders:** every code step contains the complete file.
+
+---
+
+## Deviations (recorded during execution)
+
+Executor: subagent-driven-development session on 2026-07-13. Every deviation preserves the plan's intent and public contracts; each is called out here so plan 2's executor doesn't re-derive them.
+
+- **pnpm via corepack.** `pnpm` was not on PATH; installed via `corepack enable && corepack prepare pnpm@9.15.0 --activate`. All pnpm commands in later plans should use `corepack pnpm ...` (or ensure corepack has activated the pinned version) rather than assuming a globally installed `pnpm`.
+- **`.prettierignore` broadened beyond the plan.** The plan's `.prettierignore` did not cover the pre-existing markdown docs or the create-next-app-generated web files (Next's own style: semicolons, double quotes). Both would fail the root `prettier --check .` gate. `docs/` and `apps/web/` were added to `.prettierignore` — mirroring the root eslint config, which already excludes `apps/web/**` because "the web app keeps its own Next.js ESLint setup." The web app self-lints during `next build`.
+- **`room:join` handler order.** The plan's snippet calls `ack(...)` before `io.to(...).emit('room:state', ...)`. With that order, integration test 3 ("disconnect marks the player disconnected; same token reconnects to the seat") failed deterministically: the joining client's ack microtask resolved before the host's broadcast reached the wire, so a listener registered right after the ack caught the join broadcast rather than the intended next state change. Swapped the two statements — same event name, ack shape, and emit target; verified 13/13 across 5 consecutive runs. `server.ts` carries an inline "why" comment.
+- **Lock file committed alongside each package.** The plan's `git add` lines specified only the new source directory; each `pnpm install` also updated `pnpm-lock.yaml`. Committing without the lockfile changes would break reproducible/frozen installs, so each feature commit also includes the lockfile delta.
+- **Next 16.2.10 / React 19 / Tailwind v4 installed** (not the Next 15 mentioned in the stack narrative). `create-next-app@latest` pulled the current stable. The web app builds green; Tailwind v4 ships the `slate`/`emerald` utilities the host and join pages use. The `@/` path alias is present in the generated `tsconfig.json` (despite `--no-import-alias` on the CLI), so the plan's `@/lib/socket` imports resolve.
+- **`create-next-app` template noise.** The scaffold dropped `apps/web/AGENTS.md` and `apps/web/CLAUDE.md`. Both live inside the web app's directory and were committed as part of the scaffold; they're harmless and can be pruned in any later plan that touches the app.
+- **`.DS_Store` files remain untracked.** macOS drops these into `docs/` and the repo root; they were never staged. A follow-up should add `.DS_Store` to `.gitignore`.
+
+None of the above changes required editing the plan's file structure, method names, error strings, event names, ack shapes, wire types, or spec coverage.
