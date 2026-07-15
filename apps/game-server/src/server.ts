@@ -65,7 +65,12 @@ const MAX_ROUNDS = 50
  * live in RoomManager and the pure game definitions, which keeps them
  * unit-testable without sockets.
  */
-export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager()) {
+export function attachGameServer(
+  httpServer: HttpServer,
+  rooms = new RoomManager(),
+  opts: { maxRooms?: number } = {},
+) {
+  const maxRooms = opts.maxRooms ?? 500
   const io = new Server<
     ClientToServerEvents,
     ServerToClientEvents,
@@ -148,12 +153,20 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
     log.info({ event: 'socket_connected' })
 
     socket.on('room:create', (ack) => {
+      if (typeof ack !== 'function') {
+        log.warn({ event: 'room_create_rejected', reason: 'missing acknowledgement' })
+        return
+      }
+      if (rooms.roomCount >= maxRooms) {
+        log.warn({ event: 'room_create_rejected', reason: 'server full', roomCount: rooms.roomCount })
+        return ack({ ok: false, error: 'Server is busy — try again in a few minutes' })
+      }
       const room = rooms.createRoom()
       socket.data.roomCode = room.code
       socket.data.role = 'host'
       void socket.join(room.code)
       log.info({ event: 'room_created', roomCode: room.code })
-      ack({ code: room.code })
+      ack({ ok: true, code: room.code, hostToken: room.hostToken })
     })
 
     socket.on('room:watch', (payload, ack) => {
@@ -161,13 +174,20 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
         log.warn({ event: 'watch_rejected', reason: 'missing acknowledgement' })
         return
       }
-      if (!isRecord(payload) || typeof payload.code !== 'string' || !payload.code.trim()) {
+      if (
+        !isRecord(payload) ||
+        typeof payload.code !== 'string' ||
+        !payload.code.trim() ||
+        typeof payload.hostToken !== 'string'
+      ) {
         log.warn({ event: 'watch_rejected', reason: 'invalid request' })
         return ack({ ok: false, error: 'Invalid watch request' })
       }
       const room = rooms.getRoom(payload.code)
-      if (!room) {
-        log.warn({ event: 'watch_rejected', roomCode: payload.code, reason: 'Room not found' })
+      // Deliberately the same error for "no such room" and "wrong token" so a code
+      // scanner can't distinguish live rooms from dead ones.
+      if (!room || room.hostToken !== payload.hostToken) {
+        log.warn({ event: 'watch_rejected', roomCode: payload.code, reason: 'not authorized' })
         return ack({ ok: false, error: 'Room not found' })
       }
       socket.data.roomCode = room.code

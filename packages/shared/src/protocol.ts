@@ -36,6 +36,16 @@ export type JoinResult =
   { ok: true; playerId: string; view: RoomStateMsg } | { ok: false; error: string }
 
 /**
+ * Acknowledgement returned to a host screen that created a room. On success it
+ * carries the room's `hostToken` — the per-room secret that `room:watch` must
+ * present to (re)gain host powers. Creation can fail when the server is at
+ * its room cap.
+ */
+export type CreateRoomResult =
+  | { ok: true; code: string; hostToken: string }
+  | { ok: false; error: string }
+
+/**
  * Acknowledgement returned to a host screen that attempted to open a room's
  * public view. The discriminated `ok` flag narrows to either the current view
  * or a human-readable failure reason.
@@ -64,10 +74,13 @@ export type GameInputResult =
  * callback shape for request/response round-trips.
  */
 export interface ClientToServerEvents {
-  /** Host screen creates a room. */
-  'room:create': (ack: (res: { code: string }) => void) => void
-  /** Host screen (re)opens an existing room's public view. */
-  'room:watch': (payload: { code: string }, ack: (res: WatchResult) => void) => void
+  /** Host screen creates a room; the ack carries the room's host secret. */
+  'room:create': (ack: (res: CreateRoomResult) => void) => void
+  /** Host screen (re)opens an existing room's view; requires the room's host secret. */
+  'room:watch': (
+    payload: { code: string; hostToken: string },
+    ack: (res: WatchResult) => void,
+  ) => void
   /** Player joins (or reconnects — same playerToken restores the seat). */
   'room:join': (
     payload: { code: string; nickname: string; playerToken: string },

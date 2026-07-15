@@ -41,11 +41,19 @@ export default function HostPage() {
   const [gameId, setGameId] = useState<GameId>(getInitialGameId)
   const [tone, setTone] = useState<PackTone>('friends')
   const [error, setError] = useState<string | null>(null)
+  const [fatal, setFatal] = useState<string | null>(null)
 
   useEffect(() => {
     const socket = getSocket()
-    socket.emit('room:create', ({ code }) => {
-      setMsg({ code, phase: 'lobby', players: [] })
+    socket.emit('room:create', (res) => {
+      if (!res.ok) {
+        setFatal(res.error)
+        return
+      }
+      // Session-scoped so a TV refresh can reclaim host powers via room:watch,
+      // but the secret never persists across browser sessions.
+      sessionStorage.setItem(`hpg:hostToken:${res.code}`, res.hostToken)
+      setMsg({ code: res.code, phase: 'lobby', players: [] })
       track('room_created')
     })
     socket.on('room:state', setMsg)
@@ -72,6 +80,13 @@ export default function HostPage() {
     })
   }
 
+  if (fatal) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-slate-950 p-8 text-white">
+        <p className="text-xl text-red-400">{fatal}</p>
+      </main>
+    )
+  }
   if (!msg) return <main className="grid min-h-screen place-items-center">Creating room…</main>
 
   if (msg.phase === 'game' && msg.game) {

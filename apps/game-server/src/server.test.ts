@@ -11,7 +11,7 @@ import type {
 } from '@hpg/shared'
 import { bluffFamily } from '@hpg/content'
 import { attachGameServer } from './server'
-import type { RoomManager } from './roomManager'
+import { RoomManager } from './roomManager'
 import type { RoomTimers } from './timers'
 
 type Client = Socket<ServerToClientEvents, ClientToServerEvents>
@@ -26,6 +26,13 @@ function client(): Client {
   const c: Client = connect(url, { transports: ['websocket'] })
   clients.push(c)
   return c
+}
+
+/** Create a room and unwrap the ack; throws on the (unexpected) failure path. */
+async function createRoom(c: Client): Promise<{ code: string; hostToken: string }> {
+  const res = await c.emitWithAck('room:create')
+  if (!res.ok) throw new Error(res.error)
+  return res
 }
 
 function nextState(
@@ -80,7 +87,7 @@ afterAll(async () => {
 describe('game server sockets', () => {
   it('host creates a room, player joins, everyone gets lobby state', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code } = await createRoom(host)
     expect(code).toMatch(/^[A-Z]{4}$/)
 
     const phone = client()
@@ -107,7 +114,7 @@ describe('game server sockets', () => {
 
   it('disconnect marks the player disconnected; same token reconnects to the seat', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code } = await createRoom(host)
 
     const phone = client()
     const joined = await phone.emitWithAck('room:join', {
@@ -137,9 +144,9 @@ describe('game server sockets', () => {
 
   it('a second host screen can watch an existing room', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code, hostToken } = await createRoom(host)
     const tv2 = client()
-    const res = await tv2.emitWithAck('room:watch', { code })
+    const res = await tv2.emitWithAck('room:watch', { code, hostToken })
     expect(res).toEqual({ ok: true, view: { code, phase: 'lobby', players: [] } })
   })
 
@@ -152,13 +159,49 @@ describe('game server sockets', () => {
     // Emit with no ack callback at all — must not throw server-side.
     tv.emit('room:watch', null as never)
     // Server is still alive: a normal create round-trips.
-    const { code } = await tv.emitWithAck('room:create')
+    const { code } = await createRoom(tv)
     expect(code).toMatch(/^[A-Z]{4}$/)
+  })
+
+  it('rejects room:watch with a wrong host token using the same error as a missing room', async () => {
+    const host = client()
+    const { code } = await createRoom(host)
+    const stranger = client()
+    const res = await stranger.emitWithAck('room:watch', { code, hostToken: 'not-the-token' })
+    expect(res).toEqual({ ok: false, error: 'Room not found' })
+  })
+
+  it('grants host powers to room:watch with the correct token', async () => {
+    const host = client()
+    const { code, hostToken } = await createRoom(host)
+    const second = client()
+    const res = await second.emitWithAck('room:watch', { code, hostToken })
+    expect(res).toMatchObject({ ok: true })
+  })
+
+  it('rejects room creation when the server is at capacity', async () => {
+    const capServer = createServer()
+    attachGameServer(capServer, new RoomManager(), { maxRooms: 1 })
+    await new Promise<void>((resolve) => capServer.listen(0, resolve))
+    const capUrl = `http://localhost:${(capServer.address() as AddressInfo).port}`
+    const c: Client = connect(capUrl, { transports: ['websocket'] })
+    try {
+      const first = await c.emitWithAck('room:create')
+      expect(first.ok).toBe(true)
+      const second = await c.emitWithAck('room:create')
+      expect(second).toEqual({
+        ok: false,
+        error: 'Server is busy — try again in a few minutes',
+      })
+    } finally {
+      c.disconnect()
+      await new Promise<void>((resolve) => capServer.close(() => resolve()))
+    }
   })
 
   it('rejects malformed game:start payloads and invalid rounds without crashing', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code, hostToken } = await createRoom(host)
 
     for (const payload of [null, 42, { gameId: 7, tone: 'family' }] as unknown[]) {
       const res = await host.emitWithAck('game:start', payload as never)
@@ -175,13 +218,13 @@ describe('game server sockets', () => {
     // Emit with no ack callback — must not throw server-side.
     host.emit('game:start', null as never)
     // Server is still alive.
-    const watch = await host.emitWithAck('room:watch', { code })
+    const watch = await host.emitWithAck('room:watch', { code, hostToken })
     expect(watch.ok).toBe(true)
   })
 
   it('rejects malformed game:input payloads and missing acks without crashing', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code, hostToken } = await createRoom(host)
     const phone = client()
     const joined = await phone.emitWithAck('room:join', {
       code,
@@ -197,13 +240,13 @@ describe('game server sockets', () => {
     // Emit with no ack callback — must not throw server-side.
     phone.emit('game:input', null as never)
     // Server is still alive.
-    const watch = await host.emitWithAck('room:watch', { code })
+    const watch = await host.emitWithAck('room:watch', { code, hostToken })
     expect(watch.ok).toBe(true)
   })
 
   it('keeps a same-token seat online until its final live socket disconnects', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code } = await createRoom(host)
     const oldAna = client()
     const ben = client()
     const cy = client()
@@ -263,7 +306,7 @@ describe('game server sockets', () => {
 describe('game flow over sockets', () => {
   it('re-arms the authoritative phase timer when reconnect advances Bluff Battle', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code } = await createRoom(host)
     const phones = [client(), client(), client()]
     for (const [index, phone] of phones.entries()) {
       await phone.emitWithAck('room:join', {
@@ -310,7 +353,7 @@ describe('game flow over sockets', () => {
 
   it('host starts WYR, players vote, reveal broadcasts, host ends game', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code } = await createRoom(host)
     const p1 = client()
     const p2 = client()
     await p1.emitWithAck('room:join', { code, nickname: 'Ana', playerToken: 'g-tok-1' })
@@ -350,7 +393,7 @@ describe('game flow over sockets', () => {
 
   it('players cannot start games; only the host can', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code } = await createRoom(host)
     const p1 = client()
     await p1.emitWithAck('room:join', { code, nickname: 'Ana', playerToken: 'g-tok-3' })
     const res = await p1.emitWithAck('game:start', { gameId: 'would-you-rather', tone: 'friends' })
@@ -359,7 +402,7 @@ describe('game flow over sockets', () => {
 
   it('starts prompt-less Mafia and sends exact role-specific night snapshots', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code } = await createRoom(host)
     const phones = Array.from({ length: 7 }, () => client())
     const joins = await Promise.all(
       phones.map((phone, index) =>
@@ -466,7 +509,7 @@ describe('game flow over sockets', () => {
 
   it('safely rejects a new seat during Mafia while reconnects and existing actions stay healthy', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code } = await createRoom(host)
     const phones = Array.from({ length: 4 }, () => client())
     const joins = await Promise.all(
       phones.map((phone, index) =>
@@ -530,7 +573,7 @@ describe('game flow over sockets', () => {
 
   it('rejects starting Mafia below its four-player technical minimum', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code } = await createRoom(host)
     const phones = [client(), client(), client()]
     for (const [index, phone] of phones.entries()) {
       await phone.emitWithAck('room:join', {
@@ -549,7 +592,7 @@ describe('game flow over sockets', () => {
 
   it('rejects forged player tokens before lobby or active-Mafia mutation', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code } = await createRoom(host)
     const room = serverRooms.getRoom(code)!
     const invalidTokens: unknown[] = [undefined, '', '   ', 42]
     const forgedStates: RoomStateMsg[] = []
@@ -630,7 +673,7 @@ describe('game flow over sockets', () => {
 
   it('rejects malformed join payloads and nicknames without throwing or mutating the room', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code } = await createRoom(host)
     const room = serverRooms.getRoom(code)!
     const activityBefore = room.lastActivityAt
     const malformedStates: RoomStateMsg[] = []
@@ -755,7 +798,7 @@ describe('game flow over sockets', () => {
 
   it('hosts Bluff Battle without leaking truth or authors before reveal', async () => {
     const host = client()
-    const { code } = await host.emitWithAck('room:create')
+    const { code } = await createRoom(host)
     const phones = [client(), client(), client()]
     const joins = await Promise.all(
       phones.map((phone, index) =>

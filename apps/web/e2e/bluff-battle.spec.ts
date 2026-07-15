@@ -1,21 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
 import { io } from 'socket.io-client'
 import type { RoomStateMsg } from '@hpg/shared'
+import { bluffFamily } from '@hpg/content'
 
 type CapturedState = { recipient: 'host' | 'player'; message: RoomStateMsg }
 
-const answersByQuestion: Record<string, string> = {
-  'A group of flamingos is called a…': 'A flamboyance',
-  'A baby kangaroo is called a…': 'A joey',
-  'The only mammal that can truly fly is the…': 'Bat',
-  'Bananas grow pointing…': 'Upward',
-  'A snail can sleep for up to…': 'Three years',
-  'The dot over a lowercase i is called a…': 'Tittle',
-  'Octopuses have this many hearts…': 'Three',
-  'The Hawaiian pizza was invented in…': 'Canada',
-  'A group of pugs is called a…': 'A grumble',
-  'Honey never…': 'Spoils',
-}
+const answersByQuestion = Object.fromEntries(
+  bluffFamily.prompts.map(({ question, answer }) => [question, answer]),
+)
 
 async function join(page: Page, code: string, nickname: string): Promise<void> {
   await page.goto('/join')
@@ -141,7 +133,11 @@ test('host + three players play a Bluff Battle round without pre-reveal leaks', 
 
   await host.getByRole('button', { name: 'Bluff Battle', exact: true }).click()
   const controller = io('http://localhost:4000', { transports: ['websocket'] })
-  expect(await controller.emitWithAck('room:watch', { code })).toMatchObject({ ok: true })
+  const hostToken = await host.evaluate(
+    (roomCode: string) => sessionStorage.getItem(`hpg:hostToken:${roomCode}`) ?? '',
+    code,
+  )
+  expect(await controller.emitWithAck('room:watch', { code, hostToken })).toMatchObject({ ok: true })
   expect(
     await controller.emitWithAck('game:start', {
       gameId: 'bluff-battle',
@@ -239,7 +235,11 @@ test('a missing input acknowledgement shows a retryable error and re-enables sub
   await expect(host.getByText('Cy', { exact: true })).toBeVisible()
 
   const controller = io('http://localhost:4000', { transports: ['websocket'] })
-  expect(await controller.emitWithAck('room:watch', { code })).toMatchObject({ ok: true })
+  const hostToken = await host.evaluate(
+    (roomCode: string) => sessionStorage.getItem(`hpg:hostToken:${roomCode}`) ?? '',
+    code,
+  )
+  expect(await controller.emitWithAck('room:watch', { code, hostToken })).toMatchObject({ ok: true })
   expect(
     await controller.emitWithAck('game:start', {
       gameId: 'bluff-battle',
