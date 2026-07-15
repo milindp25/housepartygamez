@@ -2,7 +2,11 @@ import type { CSSProperties } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { MARKETING_GAMES, getMarketingGame } from '@/lib/games'
+import {
+  MARKETING_GAMES,
+  getMarketingGame,
+  type MarketingGame,
+} from '@/lib/games'
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -13,11 +17,18 @@ export function generateStaticParams(): Array<{ slug: string }> {
   return MARKETING_GAMES.map(({ slug }) => ({ slug }))
 }
 
+function getMarketingDescription(game: MarketingGame): string {
+  return `${game.tagline} Host ${game.name} for ${game.minPlayers}–${game.maxPlayers} players on one shared screen, with every phone joining in. About ${game.minutes} minutes.`
+}
+
 /** Generate per-game search metadata from the public registry. */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const game = getMarketingGame((await params).slug)
   if (!game) return { title: 'Game not found' }
-  return { title: `Play ${game.name} Online with Friends`, description: game.description }
+  return {
+    title: `Play ${game.name} Online with Friends`,
+    description: getMarketingDescription(game),
+  }
 }
 
 /** Render one statically generated public game guide. */
@@ -95,7 +106,7 @@ export default async function GamePage({ params }: Props) {
             <h2 id="detail-cta-title">Put {game.name} on the big screen.</h2>
           </div>
           <div className="button-row">
-            <Link className="button button-primary" href="/host">
+            <Link className="button button-primary" href={`/host?game=${game.id}`}>
               Host {game.name}
             </Link>
             <Link className="button button-secondary" href="/#games">

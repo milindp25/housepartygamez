@@ -28,7 +28,7 @@ export default function Home() {
       </a>
 
       <header className="site-header marketing-shell">
-        <div className="wordmark" aria-label="HousePartyGamez">
+        <div className="wordmark">
           <span className="wordmark-mark" aria-hidden="true">
             HP
           </span>
@@ -47,7 +47,7 @@ export default function Home() {
                 Put one game on the TV, share a room code, and turn every phone into a private
                 controller. No app download and no pile of cards to explain.
               </p>
-              <div className="button-row" aria-label="Start playing">
+              <div className="button-row">
                 <Link className="button button-primary" href="/host">
                   Host a game
                 </Link>

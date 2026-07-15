@@ -34,6 +34,10 @@ export default function HostPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    const requestedGame = new URLSearchParams(window.location.search).get('game')
+    const selectedGame = GAMES.find(({ id }) => id === requestedGame)
+    if (selectedGame) setGameId(selectedGame.id)
+
     const socket = getSocket()
     socket.emit('room:create', ({ code }) => setMsg({ code, phase: 'lobby', players: [] }))
     socket.on('room:state', setMsg)
