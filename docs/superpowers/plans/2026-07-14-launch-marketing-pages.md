@@ -257,7 +257,7 @@ git commit -m "feat: landing page and SEO game pages"
 - Modify: `apps/web/e2e/marketing.spec.ts`
 - Modify: `docs/superpowers/plans/2026-07-13-plan-5-launch.md`
 
-- [ ] **Step 1: Complete the browser acceptance test**
+- [x] **Step 1: Complete the browser acceptance test**
 
 Add assertions for:
 
@@ -271,7 +271,7 @@ keyboard Tab reaches Host then Join with visible focus outline
 prefers-reduced-motion: reduce leaves marquee/card transforms at none
 ```
 
-- [ ] **Step 2: Run the complete local acceptance matrix**
+- [x] **Step 2: Run the complete local acceptance matrix**
 
 ```bash
 pnpm test
@@ -282,11 +282,11 @@ pnpm --filter @hpg/web e2e
 
 Expected: all unit/socket tests, production build, lint, and the full browser suite pass.
 
-- [ ] **Step 3: Update the original plan truthfully**
+- [x] **Step 3: Update the original plan truthfully**
 
 Check Plan 5 Task 4. Add a deviation explaining that the implemented catalog contains seven games because Plans 6–8 already landed. Do not check Lighthouse or production deployment steps.
 
-- [ ] **Step 4: Commit verification/bookkeeping changes if any**
+- [x] **Step 4: Commit verification/bookkeeping changes if any**
 
 ```bash
 git add apps/web/e2e/marketing.spec.ts docs/superpowers/plans/2026-07-13-plan-5-launch.md

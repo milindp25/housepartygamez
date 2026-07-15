@@ -65,10 +65,15 @@ Note: the web build must not require live env vars — guard `DATABASE_URL!` usa
 ### Task 4: Landing + SEO game pages
 
 **Files:**
-- Create: `apps/web/src/lib/games.ts` (registry: slug, name, tagline, description, minPlayers, maxPlayers, minutes, howTo steps — content for all 4 games written out, ~120 words of description each)
+- Create: `apps/web/src/lib/games.ts` (registry: slug, name, tagline, description, minPlayers, maxPlayers, minutes, howTo steps — content for all 7 implemented games written out, ~120 words of description each)
 - Create: `apps/web/src/app/page.tsx` — hero ("Party games everyone plays on their phones"), Host/Join CTAs, game cards from the registry
 - Create: `apps/web/src/app/games/[slug]/page.tsx` — `generateStaticParams` over the registry; `generateMetadata` (title `Play {name} Online with Friends`, description from registry); page body: how-to-play steps, player count, duration, CTA to `/host`
-- [ ] Build, lint, commit: `feat: landing page and SEO game pages`.
+- [x] Build, lint, commit: `feat: landing page and SEO game pages`.
+
+## Deviations
+
+- Plan 5 originally scoped four marketing pages. Plans 6–8 landed before this task was implemented, so the catalog and static detail routes truthfully cover all seven implemented games: Would You Rather, Most Likely To, Never Have I Ever, Who Said That?, Imposter, Bluff Battle, and Mafia.
+- Local build, lint, and browser acceptance checks cover this implementation; production deployment and Lighthouse targets remain pending in their original launch tasks.
 
 ---
 
