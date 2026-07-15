@@ -1,7 +1,8 @@
 # HousePartyGamez Launch Marketing Design
 
 **Date:** 2026-07-14  
-**Status:** Approved direction, pending written-spec review  
+**Status:** Approved, implemented, and locally verified
+
 **Related plan:** `docs/superpowers/plans/2026-07-13-plan-5-launch.md`
 
 ## Purpose

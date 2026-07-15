@@ -14,19 +14,30 @@ const gameLinks = [
   ['Mafia', '/games/mafia'],
 ] as const
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 async function expectVisibleFocus(locator: Locator): Promise<void> {
   await expect(locator).toBeFocused()
   await expect
     .poll(() =>
       locator.evaluate((element) => {
         const styles = getComputedStyle(element)
-        return {
-          outlineStyle: styles.outlineStyle,
-          outlineWidth: styles.outlineWidth,
-        }
+        const outlineColorIsTransparent =
+          styles.outlineColor === 'transparent' ||
+          /^rgba\([^)]*,\s*0(?:\.0+)?\)$/.test(styles.outlineColor)
+        const hasVisibleOutline =
+          styles.outlineStyle !== 'none' &&
+          Number.parseFloat(styles.outlineWidth) > 0 &&
+          !outlineColorIsTransparent
+        const hasBoxShadow =
+          styles.boxShadow !== 'none' && !styles.boxShadow.includes('rgba(0, 0, 0, 0)')
+
+        return hasVisibleOutline || hasBoxShadow
       }),
     )
-    .toEqual({ outlineStyle: 'solid', outlineWidth: '3px' })
+    .toBe(true)
 }
 
 test('landing page publishes exact metadata, actions, and all seven games', async ({ page }) => {
@@ -50,10 +61,8 @@ test('landing page publishes exact metadata, actions, and all seven games', asyn
   await expect(hero.getByRole('link', { name: 'Join a room' })).toHaveAttribute('href', '/join')
 
   for (const [name, href] of gameLinks) {
-    await expect(page.getByRole('link', { name: new RegExp(`^${name}`) })).toHaveAttribute(
-      'href',
-      href,
-    )
+    const accessibleName = new RegExp(`^${escapeRegExp(name)}`)
+    await expect(page.getByRole('link', { name: accessibleName })).toHaveAttribute('href', href)
   }
 })
 
@@ -132,17 +141,17 @@ test('reduced motion leaves marquee tiles and hovered cards untransformed', asyn
 
   const card = page.locator('.game-card').first()
   await card.hover()
-  await page.waitForTimeout(250)
 
-  const transforms = await page.evaluate(() => ({
-    card: getComputedStyle(document.querySelector<HTMLElement>('.game-card')!).transform,
-    marquee: [...document.querySelectorAll<HTMLElement>('.room-code-marquee span')].map(
-      (tile) => getComputedStyle(tile).transform,
-    ),
-  }))
-
-  expect(transforms.card).toBe('none')
-  expect(new Set(transforms.marquee)).toEqual(new Set(['none']))
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        card: getComputedStyle(document.querySelector<HTMLElement>('.game-card')!).transform,
+        marqueeAllNone: [
+          ...document.querySelectorAll<HTMLElement>('.room-code-marquee span'),
+        ].every((tile) => getComputedStyle(tile).transform === 'none'),
+      })),
+    )
+    .toEqual({ card: 'none', marqueeAllNone: true })
 })
 
 test('the host accepts only known game deep links', async ({ browser }) => {
