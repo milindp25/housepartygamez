@@ -174,7 +174,7 @@ export const nhieFriends: ContentPack<NhiePrompt> = {
     p('nhie-fri-53', 'worn headphones with nothing playing'),
     p('nhie-fri-54', 'taken a personality quiz seriously'),
     p('nhie-fri-55', 'forgotten to unmute before talking'),
-    p('nhie-fri-56', 'celebrated when plans got canceled'),
+    p('nhie-fri-56', 'used a calculator for very simple math'),
     p('nhie-fri-57', 'made a dramatic exit and then returned for something'),
     p('nhie-fri-58', 'used an old photo as if it were recent'),
     p('nhie-fri-59', 'searched for my phone while holding it'),
