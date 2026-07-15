@@ -32,6 +32,15 @@ interface SocketData {
 }
 
 /**
+ * Runtime shape check for client payloads. Socket.IO types are compile-time
+ * only — a hostile client can send anything, and a thrown destructure inside
+ * a handler is an uncaught exception that kills the whole process.
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/**
  * The set of game definitions the server knows how to host. Later plans
  * extend this map with the remaining games in the catalog.
  */
@@ -144,10 +153,18 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
       ack({ code: room.code })
     })
 
-    socket.on('room:watch', ({ code }, ack) => {
-      const room = rooms.getRoom(code)
+    socket.on('room:watch', (payload, ack) => {
+      if (typeof ack !== 'function') {
+        log.warn({ event: 'watch_rejected', reason: 'missing acknowledgement' })
+        return
+      }
+      if (!isRecord(payload) || typeof payload.code !== 'string' || !payload.code.trim()) {
+        log.warn({ event: 'watch_rejected', reason: 'invalid request' })
+        return ack({ ok: false, error: 'Invalid watch request' })
+      }
+      const room = rooms.getRoom(payload.code)
       if (!room) {
-        log.warn({ event: 'watch_rejected', roomCode: code, reason: 'Room not found' })
+        log.warn({ event: 'watch_rejected', roomCode: payload.code, reason: 'Room not found' })
         return ack({ ok: false, error: 'Room not found' })
       }
       socket.data.roomCode = room.code

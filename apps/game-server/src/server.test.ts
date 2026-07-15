@@ -143,6 +143,19 @@ describe('game server sockets', () => {
     expect(res).toEqual({ ok: true, view: { code, phase: 'lobby', players: [] } })
   })
 
+  it('rejects malformed room:watch payloads and missing acks without crashing', async () => {
+    const tv = client()
+    for (const payload of [undefined, null, 42, { code: 7 }] as unknown[]) {
+      const res = await tv.emitWithAck('room:watch', payload as never)
+      expect(res).toEqual({ ok: false, error: 'Invalid watch request' })
+    }
+    // Emit with no ack callback at all — must not throw server-side.
+    tv.emit('room:watch', null as never)
+    // Server is still alive: a normal create round-trips.
+    const { code } = await tv.emitWithAck('room:create')
+    expect(code).toMatch(/^[A-Z]{4}$/)
+  })
+
   it('keeps a same-token seat online until its final live socket disconnects', async () => {
     const host = client()
     const { code } = await host.emitWithAck('room:create')
