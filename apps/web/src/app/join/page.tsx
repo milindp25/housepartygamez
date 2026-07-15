@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import type { RoomStateMsg } from '@hpg/shared'
+import { track } from '@/lib/analytics'
 import { getPlayerToken, getSocket } from '@/lib/socket'
 import { GamePlay } from '@/components/play/GamePlay'
 
@@ -32,7 +33,14 @@ function JoinForm() {
     getSocket().emit(
       'room:join',
       { code: code.trim(), nickname, playerToken: getPlayerToken() },
-      (res) => (res.ok ? setView(res.view) : setError(res.error)),
+      (res) => {
+        if (!res.ok) {
+          setError(res.error)
+          return
+        }
+        setView(res.view)
+        track('player_joined', { code: res.view.code })
+      },
     )
   }
 

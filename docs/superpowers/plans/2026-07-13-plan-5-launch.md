@@ -81,9 +81,9 @@ Note: the web build must not require live env vars — guard `DATABASE_URL!` usa
 
 **Files:** `apps/web/src/app/providers.tsx`, `apps/web/src/lib/analytics.ts`; modify `layout.tsx`, host/join pages.
 
-- [ ] **Step 1:** `pnpm --filter @hpg/web add posthog-js`. Env: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com`.
+- [x] **Step 1:** `pnpm --filter @hpg/web add posthog-js`. Env: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com`.
 
-- [ ] **Step 2:**
+- [x] **Step 2:**
 
 `apps/web/src/lib/analytics.ts`:
 ```ts
@@ -113,9 +113,12 @@ export function track(event: string, props?: Record<string, unknown>): void {
 
 `providers.tsx`: a `'use client'` component calling `initAnalytics()` in a `useEffect`, wrapped around `children` in `layout.tsx`.
 
-- [ ] **Step 3:** Instrument the funnel: `track('room_created', { code })` in the host page's create ack; `track('player_joined', { code })` on successful join; `track('game_started', { gameId, tone })` in `startGame`. Autocapture covers everything else (every button press arrives as `$autocapture`).
+- [x] **Step 3:** Instrument the funnel: `track('room_created', { code })` in the host page's create ack; `track('player_joined', { code })` on successful join; `track('game_started', { gameId, tone })` in `startGame`. Autocapture covers everything else (every button press arrives as `$autocapture`).
 
 - [ ] **Step 4:** Deploy, click around production, confirm events + session replay in PostHog. Commit: `feat: posthog analytics with autocapture and game funnel events`.
+
+  Production event and session-replay verification remains pending because it requires a
+  PostHog project key and a deployed web app.
 
 ---
 
@@ -153,5 +156,5 @@ import { QRCodeSVG } from 'qrcode.react'
 ## Self-review notes
 
 - **Locally complete:** the CI workflow implementation and the landing page plus seven SEO game pages. Hosted GitHub workflow validation, branch push, and merge remain pending external checks.
-- **Still pending in Plan 5:** Railway and Vercel deployment, PostHog integration and production verification, QR joining and a real-phone scan, content expansion, a real-party production test, Railway log queries, the production PostHog funnel, Lighthouse targets, and the `plan-5-launched` tag.
+- **Still pending in Plan 5:** Railway and Vercel deployment, PostHog production verification, QR joining and a real-phone scan, content expansion, a real-party production test, Railway log queries, the production PostHog funnel, Lighthouse targets, and the `plan-5-launched` tag.
 - **Current product scope:** games 5–7—Imposter, Bluff Battle, and Mafia—are implemented through Plans 6–8. Payments/premium, per-game settings UI, and localization remain outside this launch slice and deferred as appropriate.

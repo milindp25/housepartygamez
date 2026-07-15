@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import type { GameId, PackTone, RoomStateMsg } from '@hpg/shared'
+import { track } from '@/lib/analytics'
 import { getSocket } from '@/lib/socket'
 import { GameHost } from '@/components/host/GameHost'
 
@@ -41,7 +42,10 @@ export default function HostPage() {
 
   useEffect(() => {
     const socket = getSocket()
-    socket.emit('room:create', ({ code }) => setMsg({ code, phase: 'lobby', players: [] }))
+    socket.emit('room:create', ({ code }) => {
+      setMsg({ code, phase: 'lobby', players: [] })
+      track('room_created', { code })
+    })
     socket.on('room:state', setMsg)
     return () => {
       socket.off('room:state', setMsg)
@@ -58,7 +62,11 @@ export default function HostPage() {
       return
     setError(null)
     getSocket().emit('game:start', { gameId, tone }, (res) => {
-      if (!res.ok) setError(res.error)
+      if (!res.ok) {
+        setError(res.error)
+        return
+      }
+      track('game_started', { gameId, tone })
     })
   }
 
