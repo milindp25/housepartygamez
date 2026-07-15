@@ -27,17 +27,22 @@ test('landing page introduces every game and opens a game detail page', async ({
     )
   }
 
+  for (const [, href] of gameLinks) {
+    await page.goto(href)
+    const description = await page.locator('meta[name="description"]').getAttribute('content')
+    expect(description?.length).toBeGreaterThanOrEqual(120)
+    expect(description?.length).toBeLessThanOrEqual(160)
+  }
+
+  await page.goto('/')
   await page.getByRole('link', { name: /^Bluff Battle/ }).click()
   await expect(page).toHaveURL('/games/bluff-battle')
   await expect(page.getByRole('heading', { level: 1, name: 'Bluff Battle' })).toBeVisible()
+  await expect(page).toHaveTitle('Play Bluff Battle Online with Friends | HousePartyGamez')
   await expect(page.getByRole('link', { name: 'Host Bluff Battle' })).toHaveAttribute(
     'href',
     '/host?game=bluff-battle',
   )
-
-  const description = await page.locator('meta[name="description"]').getAttribute('content')
-  expect(description?.length).toBeGreaterThanOrEqual(120)
-  expect(description?.length).toBeLessThanOrEqual(160)
 })
 
 test('the game-card arrow follows the stretched game link', async ({ page }) => {

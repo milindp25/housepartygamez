@@ -21,6 +21,12 @@ const GAMES: Array<{ id: GameId; name: string; note?: string }> = [
   { id: 'mafia', name: 'Mafia', note: '6–20 players' },
 ]
 
+function getInitialGameId(): GameId {
+  if (typeof window === 'undefined') return 'would-you-rather'
+  const requestedGame = new URLSearchParams(window.location.search).get('game')
+  return GAMES.find(({ id }) => id === requestedGame)?.id ?? 'would-you-rather'
+}
+
 /**
  * The host (TV) screen. Creates a room on mount, then renders either the
  * lobby (room code + player pills + game/tone pickers + start) or the
@@ -29,15 +35,11 @@ const GAMES: Array<{ id: GameId; name: string; note?: string }> = [
  */
 export default function HostPage() {
   const [msg, setMsg] = useState<RoomStateMsg | null>(null)
-  const [gameId, setGameId] = useState<GameId>('would-you-rather')
+  const [gameId, setGameId] = useState<GameId>(getInitialGameId)
   const [tone, setTone] = useState<PackTone>('friends')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const requestedGame = new URLSearchParams(window.location.search).get('game')
-    const selectedGame = GAMES.find(({ id }) => id === requestedGame)
-    if (selectedGame) setGameId(selectedGame.id)
-
     const socket = getSocket()
     socket.emit('room:create', ({ code }) => setMsg({ code, phase: 'lobby', players: [] }))
     socket.on('room:state', setMsg)
