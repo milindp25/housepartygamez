@@ -87,6 +87,8 @@ export default function HostPage() {
     )
   }
 
+  const joinUrl = buildJoinUrl(window.location.origin, msg.code)
+
   return (
     <main className="grid min-h-screen place-items-center bg-slate-950 p-4 text-white sm:p-8">
       <div className="w-full max-w-5xl space-y-6 text-center">
@@ -101,15 +103,24 @@ export default function HostPage() {
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-center gap-2">
-            <QRCodeSVG
-              value={buildJoinUrl(window.location.origin, msg.code)}
-              size={160}
-              bgColor="#0f172a"
-              fgColor="#ffffff"
-              title="QR code to join this room"
-              role="img"
-              aria-label="QR code to join this room"
-            />
+            <a
+              href={joinUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open join page for this room"
+            >
+              <QRCodeSVG
+                value={joinUrl}
+                size={160}
+                bgColor="#ffffff"
+                fgColor="#0f172a"
+                marginSize={4}
+                level="M"
+                title="QR code to join this room"
+                role="img"
+                aria-label="QR code to join this room"
+              />
+            </a>
             <p className="text-sm text-slate-300">Scan with your phone to join</p>
           </div>
         </div>
