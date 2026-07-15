@@ -184,9 +184,12 @@ normalized, encoded `joinUrl` supplies both the QR value and its accessible fall
 
 ### Task 7: Content expansion (writing, not code)
 
-- [ ] **Step 1:** Expand every pack in `packages/content` to **100+ prompts per game per tone** (spec target). Process per pack: generate candidates in bulk, then curate against this checklist — no duplicates or near-duplicates; family packs contain nothing requiring adult context; spicy stays playful (embarrassment-based, never explicit or targeting protected traits); every WYR pair is a genuine dilemma; every MLT prompt works for strangers AND close friends; ids stay stable (`wyr-fam-11`…) and append-only.
-- [ ] **Step 2:** `pnpm test && pnpm --filter @hpg/content exec tsc --noEmit` (content is type-checked — a malformed prompt fails the build).
-- [ ] **Step 3:** Commit per game: `content: expand <game> packs to 100+ prompts per tone`.
+- [x] **Step 1:** Expand every pack in `packages/content` to **100+ prompts per game per tone** (spec target). Process per pack: generate candidates in bulk, then curate against this checklist — no duplicates or near-duplicates; family packs contain nothing requiring adult context; spicy stays playful (embarrassment-based, never explicit or targeting protected traits); every WYR pair is a genuine dilemma; every MLT prompt works for strangers AND close friends; ids stay stable (`wyr-fam-11`…) and append-only.
+  - **Pre-release curation:** IDs 11–100 are draft candidates generated and curated together before launch, so text rewrites within that range are part of this task rather than stability exceptions. Append-only text stability applies to the preexisting seed IDs 1–10, subject only to the narrow safety and accuracy exceptions below.
+  - **Safety deviation:** Preserve prompt IDs, but replace the text of inherited `wyr-spi-1`, `wyr-spi-6`, `wyr-spi-10`, `mlt-fri-2`, `mlt-fri-5`, `mlt-spi-2`, `mlt-spi-7`, `nhie-spi-3`, `nhie-spi-5`, `nhie-spi-6`, `wst-fri-2`, `wst-fri-10`, `wst-spi-3`, `wst-spi-7`, `wst-spi-9`, `wst-spi-10`, and `imp-spi-3`; their original wording required immediate contact, exposed private messages/photos, invaded privacy, encouraged illegal, cruel, dangerous, or financially irresponsible behavior, inferred attraction toward a player present, used a demeaning label, or pressured players toward demeaning or potentially distressing disclosures, conflicting with the pack safety rules.
+  - **Accuracy deviation:** Preserve IDs but replace inherited Bluff Battle text at `blf-fam-1`, `blf-fam-5`, `blf-fam-9`, `blf-fam-10`, `blf-fri-1`, `blf-fri-2`, `blf-fri-5`, `blf-fri-6`, `blf-fri-7`, `blf-fri-9`, and `blf-spi-1` through `blf-spi-9`. Those seed prompts relied on weak or nonstandard collective nouns, an overbroad legal claim, an inaccurate definition, folklore stated as fact, unverifiable vending-machine or dating claims, changing averages/records, or unsupported superlatives. Stable, uniquely answerable facts take their place; this is the narrow accuracy exception to Task 7's otherwise append-only rule.
+- [x] **Step 2:** `pnpm test && pnpm --filter @hpg/content exec tsc --noEmit` (content is type-checked — a malformed prompt fails the build).
+- [x] **Step 3:** Commit per game: `content: expand <game> packs to 100+ prompts per tone`.
 
 ---
 
@@ -202,6 +205,6 @@ normalized, encoded `joinUrl` supplies both the QR value and its accessible fall
 
 ## Self-review notes
 
-- **Locally complete:** the CI workflow implementation and the landing page plus seven SEO game pages. Hosted GitHub workflow validation, branch push, and merge remain pending external checks.
-- **Still pending in Plan 5:** Railway and Vercel deployment, PostHog production verification, QR joining and a real-phone scan, content expansion, a real-party production test, Railway log queries, the production PostHog funnel, Lighthouse targets, and the `plan-5-launched` tag.
+- **Locally complete:** the CI workflow implementation; landing page plus seven SEO game pages; privacy-hardened PostHog integration; accessible host QR implementation; and 100 curated prompts in every game/tone content pack. Hosted GitHub workflow validation, branch push, and merge remain pending external checks.
+- **Still pending in Plan 5:** Railway and Vercel deployment, PostHog production funnel verification and replay consent review, a real-phone QR scan, a real-party production test, Railway log queries, Lighthouse targets, and the `plan-5-launched` tag.
 - **Current product scope:** games 5–7—Imposter, Bluff Battle, and Mafia—are implemented through Plans 6–8. Payments/premium, per-game settings UI, and localization remain outside this launch slice and deferred as appropriate.
