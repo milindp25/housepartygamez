@@ -101,8 +101,10 @@ export function initAnalytics(): void {
     autocapture: true,
     before_send: redactAnalyticsEvent,
     capture_pageview: 'history_change',
+    custom_personal_data_properties: ['code'],
     disable_session_recording: true,
     mask_all_element_attributes: true,
+    mask_personal_data_properties: true,
     mask_all_text: true,
   })
 }
@@ -122,9 +124,11 @@ export function track(
   `track('room_created')`, `track('player_joined')`, and
   `track('game_started', { gameId, tone })`. Room credentials and nicknames are never custom
   event properties. The typed allowlist rejects other event names/properties, and the
-  `before_send` redactor removes `code` from PostHog URL properties while preserving unrelated
-  query parameters. Autocapture covers other button interactions with all text and element
-  attributes masked.
+  SDK masks `code` query values before persistence. As defense in depth, the immutable recursive
+  `before_send` redactor removes case-insensitive `code` parameters from URL strings anywhere in
+  `properties`, `$set`, and `$set_once` (including enriched session-entry URLs and nested element
+  hrefs) while preserving unrelated query parameters and fragments. Autocapture covers other
+  button interactions with all text and element attributes masked.
 
 - [ ] **Step 4:** Deploy, click around production, and confirm the three-event funnel in PostHog.
   Session replay is intentionally disabled until a privacy and consent review approves it.
@@ -137,9 +141,10 @@ export function track(
 
 The original sample attached room codes to custom events and enabled replay by default. The
 implemented version deliberately omits room credentials, redacts `code` from automatic URL
-properties, follows Next.js history changes for pageviews, masks DOM text and attributes, and
-keeps session recording disabled. These controls are covered by unit and TypeScript regression
-tests and preserve the original success-ack funnel timing.
+properties at SDK persistence time, and recursively sanitizes enriched and nested event payloads
+again immediately before send. It also follows Next.js history changes for pageviews, masks DOM
+text and attributes, and keeps session recording disabled. These controls are covered by unit and
+TypeScript regression tests and preserve the original success-ack funnel timing.
 
 ---
 

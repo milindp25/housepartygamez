@@ -3,13 +3,6 @@
 import type { GameId, PackTone } from '@hpg/shared'
 import posthog, { type CaptureResult } from 'posthog-js'
 
-const URL_PROPERTIES = [
-  '$current_url',
-  '$referrer',
-  '$initial_current_url',
-  '$initial_referrer',
-] as const
-
 const FUNNEL_EVENTS = new Set<AnalyticsEvent>([
   'room_created',
   'player_joined',
@@ -55,38 +48,94 @@ function isGameStartedProperties(value: unknown): value is GameStartedProperties
   return GAME_IDS.has(properties.gameId as GameId) && PACK_TONES.has(properties.tone as PackTone)
 }
 
+function isUrlLike(value: string): boolean {
+  return (
+    /^(?:[a-z][a-z\d+.-]*:|\/\/|\/|\?|\.{1,2}\/)/i.test(value) ||
+    /^[^\s?#]+(?:\/[^\s?#]*)*\?/.test(value)
+  )
+}
+
 function redactCodeQueryParameter(value: unknown): unknown {
-  if (typeof value !== 'string') return value
+  if (typeof value !== 'string' || !isUrlLike(value)) return value
 
   const isAbsolute = /^[a-z][a-z\d+.-]*:/i.test(value)
+  const isProtocolRelative = value.startsWith('//')
+  const isQueryOnly = value.startsWith('?')
   try {
     const url = new URL(value, 'https://analytics-redaction.invalid')
-    if (!url.searchParams.has('code')) return value
+    const codeParameters = [...url.searchParams.keys()].filter(
+      (parameter) => parameter.toLowerCase() === 'code',
+    )
+    if (codeParameters.length === 0) return value
 
-    url.searchParams.delete('code')
-    return isAbsolute ? url.toString() : `${url.pathname}${url.search}${url.hash}`
+    for (const parameter of codeParameters) url.searchParams.delete(parameter)
+
+    if (isAbsolute) return url.toString()
+    if (isProtocolRelative) return `//${url.host}${url.pathname}${url.search}${url.hash}`
+    if (isQueryOnly) return `${url.search}${url.hash}`
+    return `${url.pathname}${url.search}${url.hash}`
   } catch {
     return value
   }
 }
 
-/** Remove room credentials from URL fields immediately before an event is sent. */
+interface RedactionResult {
+  value: unknown
+  changed: boolean
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object') return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === null || prototype === Object.prototype
+}
+
+function redactNestedUrls(value: unknown): RedactionResult {
+  if (typeof value === 'string') {
+    const redacted = redactCodeQueryParameter(value)
+    return { value: redacted, changed: redacted !== value }
+  }
+
+  if (Array.isArray(value)) {
+    let changed = false
+    const redacted = value.map((item) => {
+      const result = redactNestedUrls(item)
+      changed ||= result.changed
+      return result.value
+    })
+    return changed ? { value: redacted, changed } : { value, changed }
+  }
+
+  if (isPlainObject(value)) {
+    let changed = false
+    const redacted: Record<string, unknown> = {}
+    for (const [key, item] of Object.entries(value)) {
+      const result = redactNestedUrls(item)
+      changed ||= result.changed
+      redacted[key] = result.value
+    }
+    return changed ? { value: redacted, changed } : { value, changed }
+  }
+
+  return { value, changed: false }
+}
+
+/** Remove room credentials recursively immediately before an event is sent. */
 export function redactAnalyticsEvent(event: CaptureResult | null): CaptureResult | null {
   if (!event) return null
 
-  let changed = false
-  const properties = { ...event.properties }
+  const properties = redactNestedUrls(event.properties)
+  const set = redactNestedUrls(event.$set)
+  const setOnce = redactNestedUrls(event.$set_once)
+  if (!properties.changed && !set.changed && !setOnce.changed) return event
 
-  for (const property of URL_PROPERTIES) {
-    const current = properties[property]
-    const redacted = redactCodeQueryParameter(current)
-    if (redacted !== current) {
-      properties[property] = redacted
-      changed = true
-    }
+  const redacted: CaptureResult = {
+    ...event,
+    properties: properties.value as CaptureResult['properties'],
   }
-
-  return changed ? { ...event, properties } : event
+  if (event.$set !== undefined) redacted.$set = set.value as CaptureResult['$set']
+  if (event.$set_once !== undefined) redacted.$set_once = setOnce.value as CaptureResult['$set_once']
+  return redacted
 }
 
 /** No-ops when no project key is configured so local sessions stay out of product data. */
@@ -99,9 +148,11 @@ export function initAnalytics(): void {
     autocapture: true,
     before_send: redactAnalyticsEvent,
     capture_pageview: 'history_change',
+    custom_personal_data_properties: ['code'],
     disable_session_recording: true,
     mask_all_element_attributes: true,
     mask_all_text: true,
+    mask_personal_data_properties: true,
   })
 }
 

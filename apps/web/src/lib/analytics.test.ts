@@ -57,23 +57,42 @@ describe('analytics', () => {
       autocapture: true,
       before_send: redactAnalyticsEvent,
       capture_pageview: 'history_change',
+      custom_personal_data_properties: ['code'],
       disable_session_recording: true,
       mask_all_element_attributes: true,
+      mask_personal_data_properties: true,
       mask_all_text: true,
     })
   })
 
-  it('redacts room codes from URL properties without mutating the source event', async () => {
+  it('recursively redacts room codes from enriched URLs without mutating the source event', async () => {
     const { redactAnalyticsEvent } = await import('./analytics')
+    const observedAt = new Date('2026-07-14T12:00:00.000Z')
     const source = {
       uuid: 'event-id',
       event: '$pageview',
       properties: {
         $current_url: '/join?code=ABCD&source=x',
-        $referrer: 'https://example.com/join?source=x&code=EFGH',
-        $initial_current_url: 'http://[',
-        $initial_referrer: 42,
+        $session_entry_url: 'https://example.com/join?CODE=EFGH&source=qr#party',
+        $session_entry_referrer: 'http://[',
+        $elements: [
+          {
+            tag_name: 'a',
+            href: 'https://example.com/join?source=card&CoDe=IJKL#join',
+            attributes: { role: 'button' },
+          },
+        ],
+        observedAt,
+        label: 'not a url?code=KEEP',
         campaign: 'launch',
+      },
+      $set: {
+        latest_join_url: '/join?source=set&code=MNOP',
+      },
+      $set_once: {
+        $initial_current_url: 'https://example.com/join?code=QRST&source=first',
+        nested: [{ referrer: '/join?CoDe=UVWX&source=nested#fragment' }],
+        untouched: 42,
       },
     }
 
@@ -82,12 +101,29 @@ describe('analytics', () => {
     expect(redacted).not.toBe(source)
     expect(redacted?.properties).toEqual({
       $current_url: '/join?source=x',
-      $referrer: 'https://example.com/join?source=x',
-      $initial_current_url: 'http://[',
-      $initial_referrer: 42,
+      $session_entry_url: 'https://example.com/join?source=qr#party',
+      $session_entry_referrer: 'http://[',
+      $elements: [
+        {
+          tag_name: 'a',
+          href: 'https://example.com/join?source=card#join',
+          attributes: { role: 'button' },
+        },
+      ],
+      observedAt,
+      label: 'not a url?code=KEEP',
       campaign: 'launch',
     })
+    expect(redacted?.$set).toEqual({ latest_join_url: '/join?source=set' })
+    expect(redacted?.$set_once).toEqual({
+      $initial_current_url: 'https://example.com/join?source=first',
+      nested: [{ referrer: '/join?source=nested#fragment' }],
+      untouched: 42,
+    })
     expect(source.properties.$current_url).toBe('/join?code=ABCD&source=x')
+    expect(source.properties.$elements[0]?.href).toContain('CoDe=IJKL')
+    expect(source.$set_once.nested[0]?.referrer).toContain('CoDe=UVWX')
+    expect(redacted?.properties.observedAt).toBe(observedAt)
   })
 
   it('passes null events through the before-send redactor', async () => {
