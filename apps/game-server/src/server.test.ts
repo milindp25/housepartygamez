@@ -156,6 +156,29 @@ describe('game server sockets', () => {
     expect(code).toMatch(/^[A-Z]{4}$/)
   })
 
+  it('rejects malformed game:start payloads and invalid rounds without crashing', async () => {
+    const host = client()
+    const { code } = await host.emitWithAck('room:create')
+
+    for (const payload of [null, 42, { gameId: 7, tone: 'family' }] as unknown[]) {
+      const res = await host.emitWithAck('game:start', payload as never)
+      expect(res).toEqual({ ok: false, error: 'Invalid start request' })
+    }
+    for (const rounds of [0, -1, 2.5, '9', 1e9] as unknown[]) {
+      const res = await host.emitWithAck('game:start', {
+        gameId: 'would-you-rather',
+        tone: 'family',
+        rounds,
+      } as never)
+      expect(res).toEqual({ ok: false, error: 'Invalid rounds' })
+    }
+    // Emit with no ack callback — must not throw server-side.
+    host.emit('game:start', null as never)
+    // Server is still alive.
+    const watch = await host.emitWithAck('room:watch', { code })
+    expect(watch.ok).toBe(true)
+  })
+
   it('keeps a same-token seat online until its final live socket disconnects', async () => {
     const host = client()
     const { code } = await host.emitWithAck('room:create')

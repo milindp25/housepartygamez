@@ -54,6 +54,9 @@ const definitions: Partial<Record<GameId, AnyGameDefinition>> = {
   mafia,
 }
 
+/** Upper bound for a client-requested round count; keeps settings sane. */
+const MAX_ROUNDS = 50
+
 /**
  * Attaches the Socket.IO game server to an HTTP server.
  *
@@ -216,12 +219,34 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
       if (playerMsg) ack({ ok: true, playerId: result.player.id, view: playerMsg })
     })
 
-    socket.on('game:start', ({ gameId, tone, rounds }, ack) => {
+    socket.on('game:start', (payload, ack) => {
+      if (typeof ack !== 'function') {
+        log.warn({ event: 'game_start_rejected', reason: 'missing acknowledgement' })
+        return
+      }
       const code = socket.data.roomCode
       if (!code) return ack({ ok: false, error: 'Not in a room' })
       if (socket.data.role !== 'host') {
         log.warn({ event: 'game_start_rejected', roomCode: code, reason: 'not host' })
         return ack({ ok: false, error: 'Only the host can start a game' })
+      }
+      // Compile-time, `payload` already has the protocol's shape — these checks
+      // exist because a hostile client is not bound by our TypeScript types.
+      if (
+        !isRecord(payload) ||
+        typeof payload.gameId !== 'string' ||
+        typeof payload.tone !== 'string'
+      ) {
+        log.warn({ event: 'game_start_rejected', roomCode: code, reason: 'invalid request' })
+        return ack({ ok: false, error: 'Invalid start request' })
+      }
+      const { gameId, tone, rounds } = payload
+      if (
+        rounds !== undefined &&
+        (!Number.isInteger(rounds) || (rounds as number) < 1 || (rounds as number) > MAX_ROUNDS)
+      ) {
+        log.warn({ event: 'game_start_rejected', roomCode: code, reason: 'invalid rounds', rounds })
+        return ack({ ok: false, error: 'Invalid rounds' })
       }
       const definition = definitions[gameId]
       const needsPack = gameId !== 'mafia'
@@ -236,7 +261,10 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
         })
         return ack({ ok: false, error: 'Unknown game or pack' })
       }
-      const settings = { ...definition.defaultSettings, ...(rounds ? { rounds } : {}) }
+      const settings = {
+        ...definition.defaultSettings,
+        ...(rounds ? { rounds: rounds as number } : {}),
+      }
       const prompts = needsPack ? pickPrompts(pack!, settings.rounds ?? pack!.prompts.length) : []
       const result = rooms.startGame(code, definition, prompts, settings)
       if ('error' in result) {
