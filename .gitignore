@@ -2,7 +2,7 @@ node_modules/
 .next/
 dist/
 *.tsbuildinfo
-.env*.local
+.env*
 # Playwright run artifacts (per-run report + last-run.json).
 apps/web/test-results/
 apps/web/playwright-report/
