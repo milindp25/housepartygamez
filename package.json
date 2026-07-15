@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "pnpm -r test",
-    "lint": "eslint . && prettier --check .",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint . && pnpm --filter @hpg/web lint && prettier --check .",
     "format": "prettier --write .",
     "dev:server": "pnpm --filter @hpg/game-server dev",
     "dev:web": "pnpm --filter @hpg/web dev"

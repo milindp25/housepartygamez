@@ -42,8 +42,7 @@ export type JoinResult =
  * its room cap.
  */
 export type CreateRoomResult =
-  | { ok: true; code: string; hostToken: string }
-  | { ok: false; error: string }
+  { ok: true; code: string; hostToken: string } | { ok: false; error: string }
 
 /**
  * Acknowledgement returned to a host screen that attempted to open a room's

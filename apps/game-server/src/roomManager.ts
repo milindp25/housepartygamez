@@ -76,9 +76,7 @@ export class RoomManager {
    * @param opts.hostToken - Host-secret source. Injectable for deterministic
    *   tests; defaults to `crypto.randomUUID`.
    */
-  constructor(
-    opts: { now?: () => number; random?: () => number; hostToken?: () => string } = {},
-  ) {
+  constructor(opts: { now?: () => number; random?: () => number; hostToken?: () => string } = {}) {
     this.now = opts.now ?? Date.now
     this.random = opts.random ?? Math.random
     this.hostToken = opts.hostToken ?? randomUUID

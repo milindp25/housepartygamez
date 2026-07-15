@@ -14,6 +14,7 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm --filter @hpg/web build
         env: { SKIP_ENV_VALIDATION: '1' }

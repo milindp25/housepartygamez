@@ -173,7 +173,11 @@ export function attachGameServer(
         return
       }
       if (rooms.roomCount >= maxRooms) {
-        log.warn({ event: 'room_create_rejected', reason: 'server full', roomCount: rooms.roomCount })
+        log.warn({
+          event: 'room_create_rejected',
+          reason: 'server full',
+          roomCount: rooms.roomCount,
+        })
         return ack({ ok: false, error: 'Server is busy — try again in a few minutes' })
       }
       const room = rooms.createRoom()

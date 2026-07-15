@@ -172,7 +172,10 @@ describe('game server sockets', () => {
       expect(res).toEqual({ ok: false, error: 'Invalid watch request' })
     }
     // Emit with no ack callback at all — must not throw server-side.
-    tv.emit('room:watch', null as never)
+    ;(tv as unknown as { emit(event: 'room:watch', payload: unknown): void }).emit(
+      'room:watch',
+      null,
+    )
     // Server is still alive: a normal create round-trips.
     const { code } = await createRoom(tv)
     expect(code).toMatch(/^[A-Z]{4}$/)
@@ -231,7 +234,10 @@ describe('game server sockets', () => {
       expect(res).toEqual({ ok: false, error: 'Invalid rounds' })
     }
     // Emit with no ack callback — must not throw server-side.
-    host.emit('game:start', null as never)
+    ;(host as unknown as { emit(event: 'game:start', payload: unknown): void }).emit(
+      'game:start',
+      null,
+    )
     // Server is still alive.
     const watch = await host.emitWithAck('room:watch', { code, hostToken })
     expect(watch.ok).toBe(true)
@@ -253,7 +259,10 @@ describe('game server sockets', () => {
       expect(res).toEqual({ ok: false, error: 'Invalid input request' })
     }
     // Emit with no ack callback — must not throw server-side.
-    phone.emit('game:input', null as never)
+    ;(phone as unknown as { emit(event: 'game:input', payload: unknown): void }).emit(
+      'game:input',
+      null,
+    )
     // Server is still alive.
     const watch = await host.emitWithAck('room:watch', { code, hostToken })
     expect(watch.ok).toBe(true)

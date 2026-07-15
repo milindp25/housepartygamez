@@ -17,7 +17,7 @@ const base = {
   rounds: 3,
   answerSeconds: 20,
   revealSeconds: 8,
-  revealMode: 'names' as const,
+  revealMode: 'names' as 'names' | 'count',
   elimination: false,
   strikes: 2,
 }
