@@ -31,10 +31,8 @@ async function expectVisibleFocus(locator: Locator): Promise<void> {
           styles.outlineStyle !== 'none' &&
           Number.parseFloat(styles.outlineWidth) > 0 &&
           !outlineColorIsTransparent
-        const hasBoxShadow =
-          styles.boxShadow !== 'none' && !styles.boxShadow.includes('rgba(0, 0, 0, 0)')
 
-        return hasVisibleOutline || hasBoxShadow
+        return hasVisibleOutline
       }),
     )
     .toBe(true)
