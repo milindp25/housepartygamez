@@ -9,6 +9,13 @@ const EMPTY_LOBBY_IDLE_MS = 30 * 60_000
 const SWEEP_INTERVAL_MS = 60_000
 const port = Number(process.env.PORT ?? 4000)
 
+if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
+  logger.warn({
+    event: 'cors_origin_missing',
+    msg: 'CORS_ORIGIN is unset in production — all cross-origin clients are blocked',
+  })
+}
+
 const httpServer = createServer()
 const { io, rooms, timers } = attachGameServer(httpServer)
 

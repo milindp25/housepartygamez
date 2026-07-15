@@ -10,7 +10,7 @@ import type {
   ServerToClientEvents,
 } from '@hpg/shared'
 import { bluffFamily } from '@hpg/content'
-import { attachGameServer } from './server'
+import { attachGameServer, resolveCorsOrigin } from './server'
 import { RoomManager } from './roomManager'
 import type { RoomTimers } from './timers'
 
@@ -82,6 +82,21 @@ beforeAll(async () => {
 afterAll(async () => {
   for (const c of clients) c.disconnect()
   await new Promise<void>((resolve) => httpServer.close(() => resolve()))
+})
+
+describe('resolveCorsOrigin', () => {
+  it('honours an explicit CORS_ORIGIN', () => {
+    expect(resolveCorsOrigin({ CORS_ORIGIN: 'https://housepartygamez.com' })).toBe(
+      'https://housepartygamez.com',
+    )
+  })
+  it('stays permissive outside production so localhost:3000 can reach :4000', () => {
+    expect(resolveCorsOrigin({})).toBe('*')
+    expect(resolveCorsOrigin({ NODE_ENV: 'test' })).toBe('*')
+  })
+  it('fails closed in production when CORS_ORIGIN is unset', () => {
+    expect(resolveCorsOrigin({ NODE_ENV: 'production' })).toBe(false)
+  })
 })
 
 describe('game server sockets', () => {

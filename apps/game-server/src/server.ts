@@ -58,6 +58,21 @@ const definitions: Partial<Record<GameId, AnyGameDefinition>> = {
 const MAX_ROUNDS = 50
 
 /**
+ * Resolve the Socket.IO CORS origin. An explicit CORS_ORIGIN always wins.
+ * Production with no explicit origin fails CLOSED (`false` = block all
+ * cross-origin requests) rather than open — a misconfigured deploy should be
+ * unreachable, not world-writable. Dev/test keep `'*'` so localhost:3000 can
+ * reach localhost:4000.
+ */
+export function resolveCorsOrigin(env: {
+  CORS_ORIGIN?: string
+  NODE_ENV?: string
+}): string | false {
+  if (env.CORS_ORIGIN) return env.CORS_ORIGIN
+  return env.NODE_ENV === 'production' ? false : '*'
+}
+
+/**
  * Attaches the Socket.IO game server to an HTTP server.
  *
  * This layer only translates socket events into RoomManager calls and
@@ -76,7 +91,7 @@ export function attachGameServer(
     ServerToClientEvents,
     Record<string, never>,
     SocketData
-  >(httpServer, { cors: { origin: process.env.CORS_ORIGIN ?? '*' } })
+  >(httpServer, { cors: { origin: resolveCorsOrigin(process.env) } })
   const timers = new RoomTimers()
 
   /**
