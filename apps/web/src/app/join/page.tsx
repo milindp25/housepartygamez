@@ -3,7 +3,9 @@ import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import type { RoomStateMsg } from '@hpg/shared'
 import { track } from '@/lib/analytics'
+import { onConnectionChange, onReconnect } from '@/lib/reconnect'
 import { getPlayerToken, getSocket } from '@/lib/socket'
+import { ConnectionBanner } from '@/components/ConnectionBanner'
 import { GamePlay } from '@/components/play/GamePlay'
 
 /**
@@ -18,26 +20,54 @@ function JoinForm() {
   const [nickname, setNickname] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [view, setView] = useState<RoomStateMsg | null>(null)
+  const [connected, setConnected] = useState(true)
+  const [seat, setSeat] = useState<{ code: string; nickname: string } | null>(null)
 
   useEffect(() => {
     const socket = getSocket()
     socket.on('room:state', setView)
+    const offStatus = onConnectionChange(socket, setConnected)
     return () => {
       socket.off('room:state', setView)
+      offStatus()
     }
   }, [])
+
+  // Reclaim the seat after a transport drop (venue wifi, locked phone). The
+  // server recognises the stored playerToken and restores the original seat.
+  useEffect(() => {
+    if (!seat) return
+    const socket = getSocket()
+    return onReconnect(socket, () => {
+      socket.emit(
+        'room:join',
+        { code: seat.code, nickname: seat.nickname, playerToken: getPlayerToken() },
+        (res) => {
+          if (res.ok) {
+            setView(res.view)
+            return
+          }
+          setView(null)
+          setSeat(null)
+          setError('The room has closed — ask the host for a new code.')
+        },
+      )
+    })
+  }, [seat])
 
   function join(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    const trimmedCode = code.trim()
     getSocket().emit(
       'room:join',
-      { code: code.trim(), nickname, playerToken: getPlayerToken() },
+      { code: trimmedCode, nickname, playerToken: getPlayerToken() },
       (res) => {
         if (!res.ok) {
           setError(res.error)
           return
         }
+        setSeat({ code: trimmedCode, nickname })
         setView(res.view)
         track('player_joined')
       },
@@ -48,12 +78,14 @@ function JoinForm() {
     if (view.phase === 'game' && view.game) {
       return (
         <main className="min-h-screen bg-slate-950 p-6 text-white">
+          <ConnectionBanner connected={connected} />
           <GamePlay gameId={view.game.id} view={view.game.view} />
         </main>
       )
     }
     return (
       <main className="min-h-screen bg-slate-950 p-6 text-white">
+        <ConnectionBanner connected={connected} />
         <h1 className="mb-4 text-2xl font-bold">Room {view.code}</h1>
         <p className="mb-2 text-slate-400">Waiting for the host to start…</p>
         <ul className="space-y-2">

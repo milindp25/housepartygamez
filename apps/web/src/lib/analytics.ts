@@ -156,6 +156,16 @@ export function initAnalytics(): void {
   })
 }
 
+/**
+ * Report a client-side exception to PostHog. Silent no-op when analytics is
+ * off (no key configured) so local sessions and privacy-opted-out builds
+ * never send anything.
+ */
+export function captureError(error: unknown): void {
+  if (!posthog.__loaded) return
+  posthog.captureException(error)
+}
+
 /** Capture only the allowlisted, privacy-reviewed product funnel events. */
 export function track<Event extends AnalyticsEvent>(
   event: Event,

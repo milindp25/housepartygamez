@@ -4,6 +4,7 @@ const posthog = vi.hoisted(() => ({
   __loaded: false,
   init: vi.fn(),
   capture: vi.fn(),
+  captureException: vi.fn(),
 }))
 
 vi.mock('posthog-js', () => ({ default: posthog }))
@@ -30,6 +31,7 @@ describe('analytics', () => {
     posthog.__loaded = false
     posthog.init.mockReset()
     posthog.capture.mockReset()
+    posthog.captureException.mockReset()
   })
 
   it('does not initialize without a project key', async () => {
@@ -138,6 +140,19 @@ describe('analytics', () => {
     track('room_created')
 
     expect(posthog.capture).not.toHaveBeenCalled()
+  })
+
+  it('captureError no-ops when posthog is not loaded', async () => {
+    const { captureError } = await import('./analytics')
+    captureError(new Error('boom'))
+    expect(posthog.captureException).not.toHaveBeenCalled()
+  })
+
+  it('captureError forwards to posthog once loaded', async () => {
+    posthog.__loaded = true
+    const { captureError } = await import('./analytics')
+    captureError(new Error('boom'))
+    expect(posthog.captureException).toHaveBeenCalledWith(expect.any(Error))
   })
 
   it('captures events after PostHog has loaded', async () => {

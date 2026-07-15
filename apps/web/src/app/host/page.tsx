@@ -1,10 +1,12 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { GameId, PackTone, RoomStateMsg } from '@hpg/shared'
 import { QRCodeSVG } from 'qrcode.react'
 import { track } from '@/lib/analytics'
 import { buildJoinUrl } from '@/lib/join-url'
+import { onConnectionChange, onReconnect } from '@/lib/reconnect'
 import { getSocket } from '@/lib/socket'
+import { ConnectionBanner } from '@/components/ConnectionBanner'
 import { GameHost } from '@/components/host/GameHost'
 
 const TONES: PackTone[] = ['family', 'friends', 'spicy']
@@ -42,25 +44,45 @@ export default function HostPage() {
   const [tone, setTone] = useState<PackTone>('friends')
   const [error, setError] = useState<string | null>(null)
   const [fatal, setFatal] = useState<string | null>(null)
+  const [connected, setConnected] = useState(true)
+  const createdRef = useRef(false)
 
   useEffect(() => {
     const socket = getSocket()
-    socket.emit('room:create', (res) => {
-      if (!res.ok) {
-        setFatal(res.error)
-        return
-      }
-      // Session-scoped so a TV refresh can reclaim host powers via room:watch,
-      // but the secret never persists across browser sessions.
-      sessionStorage.setItem(`hpg:hostToken:${res.code}`, res.hostToken)
-      setMsg({ code: res.code, phase: 'lobby', players: [] })
-      track('room_created')
-    })
     socket.on('room:state', setMsg)
+    const offStatus = onConnectionChange(socket, setConnected)
+    if (!createdRef.current) {
+      createdRef.current = true
+      socket.emit('room:create', (res) => {
+        if (!res.ok) {
+          setFatal(res.error)
+          return
+        }
+        sessionStorage.setItem(`hpg:hostToken:${res.code}`, res.hostToken)
+        setMsg({ code: res.code, phase: 'lobby', players: [] })
+        track('room_created')
+      })
+    }
     return () => {
       socket.off('room:state', setMsg)
+      offStatus()
     }
   }, [])
+
+  const roomCode = msg?.code
+  // Re-attach this screen to its room after a transport drop; the stored
+  // hostToken restores host powers on the fresh server-side connection.
+  useEffect(() => {
+    if (!roomCode) return
+    const socket = getSocket()
+    return onReconnect(socket, () => {
+      const hostToken = sessionStorage.getItem(`hpg:hostToken:${roomCode}`) ?? ''
+      socket.emit('room:watch', { code: roomCode, hostToken }, (res) => {
+        if (res.ok) setMsg(res.view)
+        else setFatal('This room has expired — refresh to start a new one.')
+      })
+    })
+  }, [roomCode])
 
   function startGame() {
     // Spicy packs are adult-only: the host confirms once, for the room (spec: 18+ gate).
@@ -92,6 +114,7 @@ export default function HostPage() {
   if (msg.phase === 'game' && msg.game) {
     return (
       <main className="grid min-h-screen place-items-center bg-slate-950 p-8 text-white">
+        <ConnectionBanner connected={connected} />
         <GameHost
           gameId={msg.game.id}
           view={msg.game.view}
@@ -107,6 +130,7 @@ export default function HostPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-slate-950 p-4 text-white sm:p-8">
       <div className="w-full max-w-5xl space-y-6 text-center">
+        <ConnectionBanner connected={connected} />
         <div className="flex flex-col items-center justify-center gap-6 sm:flex-row sm:gap-10">
           <div className="min-w-0">
             <p className="text-xl text-slate-400">Join at {window.location.host}/join with code</p>
