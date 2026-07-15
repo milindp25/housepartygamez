@@ -40,7 +40,9 @@ const gameIdPrefixes: Partial<Record<GameId, string>> = {
 const toneIdPrefixes: Record<PackTone, string> = { family: 'fam', friends: 'fri', spicy: 'spi' }
 
 function promptFingerprint(prompt: unknown): string {
-  const { id: _id, ...content } = prompt as Record<string, unknown>
+  const content = Object.fromEntries(
+    Object.entries(prompt as Record<string, unknown>).filter(([key]) => key !== 'id'),
+  )
   return JSON.stringify(content)
     .toLocaleLowerCase()
     .replaceAll(/[^a-z0-9]+/g, '')
