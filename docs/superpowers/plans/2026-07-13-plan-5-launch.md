@@ -152,5 +152,6 @@ import { QRCodeSVG } from 'qrcode.react'
 
 ## Self-review notes
 
-- **Spec coverage (plan-5 slice):** deploy split Vercel/Railway ✓, marketing + per-game SEO pages ✓ (the Next.js-for-SEO decision pays off here), PostHog autocapture + funnel events mirroring log names ✓, QR join ✓, content to spec volume ✓, CI ✓.
-- **Still deferred (post-v1, per spec):** games 5–7 (Imposter, Bluff Battle, Mafia), payments/premium, per-game settings UI, localization. Next planning session picks these up.
+- **Locally complete:** the CI workflow implementation and the landing page plus seven SEO game pages. Hosted GitHub workflow validation, branch push, and merge remain pending external checks.
+- **Still pending in Plan 5:** Railway and Vercel deployment, PostHog integration and production verification, QR joining and a real-phone scan, content expansion, a real-party production test, Railway log queries, the production PostHog funnel, Lighthouse targets, and the `plan-5-launched` tag.
+- **Current product scope:** games 5–7—Imposter, Bluff Battle, and Mafia—are implemented through Plans 6–8. Payments/premium, per-game settings UI, and localization remain outside this launch slice and deferred as appropriate.
