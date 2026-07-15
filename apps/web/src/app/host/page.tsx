@@ -44,7 +44,7 @@ export default function HostPage() {
     const socket = getSocket()
     socket.emit('room:create', ({ code }) => {
       setMsg({ code, phase: 'lobby', players: [] })
-      track('room_created', { code })
+      track('room_created')
     })
     socket.on('room:state', setMsg)
     return () => {

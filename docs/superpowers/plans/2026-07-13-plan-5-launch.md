@@ -79,7 +79,8 @@ Note: the web build must not require live env vars — guard `DATABASE_URL!` usa
 
 ### Task 5: PostHog analytics
 
-**Files:** `apps/web/src/app/providers.tsx`, `apps/web/src/lib/analytics.ts`; modify `layout.tsx`, host/join pages.
+**Files:** `apps/web/src/app/providers.tsx`, `apps/web/src/lib/analytics.ts`,
+`apps/web/src/lib/analytics.test.ts`; modify `layout.tsx`, host/join pages.
 
 - [x] **Step 1:** `pnpm --filter @hpg/web add posthog-js`. Env: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com`.
 
@@ -88,7 +89,8 @@ Note: the web build must not require live env vars — guard `DATABASE_URL!` usa
 `apps/web/src/lib/analytics.ts`:
 ```ts
 'use client'
-import posthog from 'posthog-js'
+import type { GameId, PackTone } from '@hpg/shared'
+import posthog, { type CaptureResult } from 'posthog-js'
 
 /** No-ops locally when no key is set — dev sessions never pollute product data. */
 export function initAnalytics(): void {
@@ -96,29 +98,48 @@ export function initAnalytics(): void {
   if (!key || posthog.__loaded) return
   posthog.init(key, {
     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-    capture_pageview: true,
-    autocapture: true, // click tracking with zero manual wiring
+    autocapture: true,
+    before_send: redactAnalyticsEvent,
+    capture_pageview: 'history_change',
+    disable_session_recording: true,
+    mask_all_element_attributes: true,
+    mask_all_text: true,
   })
 }
 
-/**
- * Funnel events use the SAME names as the game server's pino `event` field
- * (room_created, player_joined, game_started) so product analytics and
- * server logs correlate during debugging.
- */
-export function track(event: string, props?: Record<string, unknown>): void {
-  if (posthog.__loaded) posthog.capture(event, props)
-}
+export function redactAnalyticsEvent(event: CaptureResult | null): CaptureResult | null
+
+export function track(event: 'room_created' | 'player_joined'): void
+export function track(
+  event: 'game_started',
+  props: { gameId: GameId; tone: PackTone },
+): void
 ```
 
 `providers.tsx`: a `'use client'` component calling `initAnalytics()` in a `useEffect`, wrapped around `children` in `layout.tsx`.
 
-- [x] **Step 3:** Instrument the funnel: `track('room_created', { code })` in the host page's create ack; `track('player_joined', { code })` on successful join; `track('game_started', { gameId, tone })` in `startGame`. Autocapture covers everything else (every button press arrives as `$autocapture`).
+- [x] **Step 3:** Instrument the funnel after successful acknowledgements:
+  `track('room_created')`, `track('player_joined')`, and
+  `track('game_started', { gameId, tone })`. Room credentials and nicknames are never custom
+  event properties. The typed allowlist rejects other event names/properties, and the
+  `before_send` redactor removes `code` from PostHog URL properties while preserving unrelated
+  query parameters. Autocapture covers other button interactions with all text and element
+  attributes masked.
 
-- [ ] **Step 4:** Deploy, click around production, confirm events + session replay in PostHog. Commit: `feat: posthog analytics with autocapture and game funnel events`.
+- [ ] **Step 4:** Deploy, click around production, and confirm the three-event funnel in PostHog.
+  Session replay is intentionally disabled until a privacy and consent review approves it.
 
-  Production event and session-replay verification remains pending because it requires a
-  PostHog project key and a deployed web app.
+  Production funnel verification remains pending because it requires a PostHog project key and
+  a deployed web app. Replay must not be enabled or claimed complete before the privacy and
+  consent review.
+
+#### Privacy-hardening deviation
+
+The original sample attached room codes to custom events and enabled replay by default. The
+implemented version deliberately omits room credentials, redacts `code` from automatic URL
+properties, follows Next.js history changes for pageviews, masks DOM text and attributes, and
+keeps session recording disabled. These controls are covered by unit and TypeScript regression
+tests and preserve the original success-ack funnel timing.
 
 ---
 

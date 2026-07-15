@@ -39,7 +39,7 @@ function JoinForm() {
           return
         }
         setView(res.view)
-        track('player_joined', { code: res.view.code })
+        track('player_joined')
       },
     )
   }
