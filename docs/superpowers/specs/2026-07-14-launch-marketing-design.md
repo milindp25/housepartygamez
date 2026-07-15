@@ -62,13 +62,16 @@ Desktop composition uses an asymmetric hero: copy/actions occupy the left side a
 Every registry entry generates a static route and metadata:
 
 - title: `Play {name} Online with Friends`
-- description derived from the registry description
+- a 120–160-character search description generated from the registry tagline, name, player range, and duration
 - canonical game name, player range, and duration above the fold
+- the full 100–140 word registry description as body copy
 - ordered how-to-play steps
 - a clear `Host {name}` CTA linking to `/host`
 - a link back to the full game deck
 
 Unknown slugs use the framework's not-found behavior. Page copy must not claim modes, content, payment features, or live deployment capabilities that the game does not have.
+
+Design refinement (2026-07-14): search metadata uses the concise generated summary instead of the full registry description. This keeps every description useful in search previews and avoids publishing 700-plus-character meta descriptions, while preserving the complete explanatory copy on the page.
 
 ## Component boundaries
 
@@ -98,6 +101,7 @@ Unknown slugs use the framework's not-found behavior. Page copy must not claim m
 
 - Unit coverage validates unique slugs/IDs and successful registry lookup for all seven games.
 - `generateStaticParams` covers every registry entry and missing slugs return not found.
+- Browser coverage verifies that every generated metadata description is 120–160 characters; detail-page review confirms that the full registry description remains body copy.
 - Production build and repository lint pass with no application secrets.
 - Browser checks cover hero actions, all seven game links, one game detail page, keyboard focus, and a mobile viewport without horizontal overflow.
 - Metadata is inspected for `/` and at least one `/games/*` route.

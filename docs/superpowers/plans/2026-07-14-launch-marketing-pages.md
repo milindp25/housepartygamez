@@ -204,11 +204,18 @@ export function generateStaticParams(): Array<{ slug: string }> {
   return MARKETING_GAMES.map(({ slug }) => ({ slug }))
 }
 
+function getMarketingDescription(game: MarketingGame): string {
+  return `${game.tagline} Host ${game.name} for ${game.minPlayers}–${game.maxPlayers} players on one shared screen, with every phone joining in. About ${game.minutes} minutes.`
+}
+
 /** Generate per-game search metadata from the public registry. */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const game = getMarketingGame((await params).slug)
   if (!game) return { title: 'Game not found' }
-  return { title: `Play ${game.name} Online with Friends`, description: game.description }
+  return {
+    title: `Play ${game.name} Online with Friends`,
+    description: getMarketingDescription(game),
+  }
 }
 
 export default async function GamePage({ params }: Props) {
@@ -218,6 +225,8 @@ export default async function GamePage({ params }: Props) {
   // ordered how-to steps, Host {name} CTA, and All games link
 }
 ```
+
+Generate each search description from the registry tagline, name, player range, and duration, and keep it between 120 and 160 characters. Continue rendering the full 100–140 word `game.description` as the detail page's body copy.
 
 - [x] **Step 5: Implement the visual system in `globals.css`**
 
