@@ -9,6 +9,7 @@ import type {
   RoomStateMsg,
   ServerToClientEvents,
 } from '@hpg/shared'
+import { bluffFamily } from '@hpg/content'
 import { attachGameServer } from './server'
 import type { RoomManager } from './roomManager'
 import type { RoomTimers } from './timers'
@@ -58,18 +59,9 @@ function expectExactKeys(value: unknown, keys: string[]): void {
   expect(Object.keys(value as Record<string, unknown>).sort()).toEqual([...keys].sort())
 }
 
-const bluffFamilyAnswers: Record<string, string> = {
-  'A group of flamingos is called a…': 'A flamboyance',
-  'A baby kangaroo is called a…': 'A joey',
-  'The only mammal that can truly fly is the…': 'Bat',
-  'Bananas grow pointing…': 'Upward',
-  'A snail can sleep for up to…': 'Three years',
-  'The dot over a lowercase i is called a…': 'Tittle',
-  'Octopuses have this many hearts…': 'Three',
-  'The Hawaiian pizza was invented in…': 'Canada',
-  'A group of pugs is called a…': 'A grumble',
-  'Honey never…': 'Spoils',
-}
+const bluffFamilyAnswers = Object.fromEntries(
+  bluffFamily.prompts.map(({ question, answer }) => [question, answer]),
+)
 
 beforeAll(async () => {
   httpServer = createServer()
