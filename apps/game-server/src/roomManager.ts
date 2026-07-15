@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import {
   generateRoomCode,
   type AnyGameDefinition,
@@ -36,6 +37,12 @@ export interface ActiveGame {
  */
 export interface Room {
   code: string
+  /**
+   * Per-room secret issued to the creating host. `room:watch` must present it
+   * to gain host powers — knowing the 4-letter room code alone must never be
+   * enough to start/end games (codes are short, guessable, and shown on TVs).
+   */
+  hostToken: string
   players: RoomPlayer[]
   lastActivityAt: number
   game?: ActiveGame
@@ -58,6 +65,7 @@ export class RoomManager {
   private rooms = new Map<string, Room>()
   private now: () => number
   private random: () => number
+  private hostToken: () => string
   private nextPlayerId = 1
 
   /**
@@ -65,10 +73,15 @@ export class RoomManager {
    *   deterministic expiry tests; defaults to `Date.now`.
    * @param opts.random - RNG returning a value in [0, 1). Injectable so tests can
    *   force code collisions; defaults to `Math.random`.
+   * @param opts.hostToken - Host-secret source. Injectable for deterministic
+   *   tests; defaults to `crypto.randomUUID`.
    */
-  constructor(opts: { now?: () => number; random?: () => number } = {}) {
+  constructor(
+    opts: { now?: () => number; random?: () => number; hostToken?: () => string } = {},
+  ) {
     this.now = opts.now ?? Date.now
     this.random = opts.random ?? Math.random
+    this.hostToken = opts.hostToken ?? randomUUID
   }
 
   /**
@@ -79,7 +92,12 @@ export class RoomManager {
   createRoom(): Room {
     let code = generateRoomCode(this.random)
     while (this.rooms.has(code)) code = generateRoomCode(this.random) // avoid colliding with a live room
-    const room: Room = { code, players: [], lastActivityAt: this.now() }
+    const room: Room = {
+      code,
+      hostToken: this.hostToken(),
+      players: [],
+      lastActivityAt: this.now(),
+    }
     this.rooms.set(code, room)
     return room
   }
@@ -93,6 +111,11 @@ export class RoomManager {
    */
   getRoom(code: string): Room | undefined {
     return this.rooms.get(code.toUpperCase())
+  }
+
+  /** Number of live rooms; used by the create cap and the `/health` endpoint. */
+  get roomCount(): number {
+    return this.rooms.size
   }
 
   /**

@@ -27,6 +27,26 @@ describe('RoomManager', () => {
     expect(b.code).not.toBe(a.code)
   })
 
+  it('assigns each room a distinct secret host token', () => {
+    const rooms = new RoomManager()
+    const a = rooms.createRoom()
+    const b = rooms.createRoom()
+    expect(a.hostToken).toMatch(/[0-9a-f-]{36}/)
+    expect(b.hostToken).toMatch(/[0-9a-f-]{36}/)
+    expect(a.hostToken).not.toBe(b.hostToken)
+  })
+
+  it('reports the live room count', () => {
+    let t = 0
+    const rooms = new RoomManager({ now: () => t })
+    rooms.createRoom()
+    rooms.createRoom()
+    expect(rooms.roomCount).toBe(2)
+    t = 10_000
+    rooms.sweepExpired(5_000)
+    expect(rooms.roomCount).toBe(0)
+  })
+
   it('joins a player by code, case-insensitive', () => {
     const room = rooms.createRoom()
     const res = rooms.join(room.code.toLowerCase(), 'Milind', 'tok-1')
