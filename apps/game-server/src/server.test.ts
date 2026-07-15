@@ -179,6 +179,28 @@ describe('game server sockets', () => {
     expect(watch.ok).toBe(true)
   })
 
+  it('rejects malformed game:input payloads and missing acks without crashing', async () => {
+    const host = client()
+    const { code } = await host.emitWithAck('room:create')
+    const phone = client()
+    const joined = await phone.emitWithAck('room:join', {
+      code,
+      nickname: 'Mal',
+      playerToken: 'tok-malformed-input',
+    })
+    if (!joined.ok) throw new Error(joined.error)
+
+    for (const payload of [null, 42, 'submit'] as unknown[]) {
+      const res = await phone.emitWithAck('game:input', payload as never)
+      expect(res).toEqual({ ok: false, error: 'Invalid input request' })
+    }
+    // Emit with no ack callback — must not throw server-side.
+    phone.emit('game:input', null as never)
+    // Server is still alive.
+    const watch = await host.emitWithAck('room:watch', { code })
+    expect(watch.ok).toBe(true)
+  })
+
   it('keeps a same-token seat online until its final live socket disconnects', async () => {
     const host = client()
     const { code } = await host.emitWithAck('room:create')

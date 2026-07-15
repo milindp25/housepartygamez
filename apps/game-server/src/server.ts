@@ -278,7 +278,16 @@ export function attachGameServer(httpServer: HttpServer, rooms = new RoomManager
       ack({ ok: true })
     })
 
-    socket.on('game:input', ({ input }, ack) => {
+    socket.on('game:input', (payload, ack) => {
+      if (typeof ack !== 'function') {
+        log.warn({ event: 'game_input_rejected', reason: 'missing acknowledgement' })
+        return
+      }
+      if (!isRecord(payload)) {
+        log.warn({ event: 'game_input_rejected', reason: 'invalid request' })
+        return ack({ ok: false, error: 'Invalid input request' })
+      }
+      const { input } = payload
       const { roomCode, playerToken } = socket.data
       const player =
         roomCode && playerToken ? rooms.playerByToken(roomCode, playerToken) : undefined
