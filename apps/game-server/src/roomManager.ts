@@ -42,6 +42,8 @@ export interface Room {
 }
 
 const MAX_PLAYERS = 20
+/** Server-side nickname cap; the join form caps at 20, this is the hard stop. */
+const MAX_NICKNAME_LENGTH = 24
 
 /**
  * In-memory registry of active rooms and the operations that mutate them:
@@ -127,6 +129,9 @@ export class RoomManager {
     if (typeof nickname !== 'string') return { error: 'Nickname required' }
     const name = nickname.trim()
     if (!name) return { error: 'Nickname required' }
+    if (name.length > MAX_NICKNAME_LENGTH) {
+      return { error: `Nickname too long (max ${MAX_NICKNAME_LENGTH} characters)` }
+    }
     if (room.players.some((p) => p.nickname.toLowerCase() === name.toLowerCase())) {
       return { error: 'Nickname taken' }
     }

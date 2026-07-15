@@ -42,6 +42,16 @@ describe('RoomManager', () => {
     expect(rooms.join(room.code, 'milind', 'tok-2')).toEqual({ error: 'Nickname taken' })
   })
 
+  it('rejects nicknames longer than 24 characters', () => {
+    const rooms = new RoomManager()
+    const room = rooms.createRoom()
+    expect(rooms.join(room.code, 'x'.repeat(25), 'tok-too-long')).toEqual({
+      error: 'Nickname too long (max 24 characters)',
+    })
+    // Exactly at the limit is fine.
+    expect(rooms.join(room.code, 'x'.repeat(24), 'tok-at-limit')).toHaveProperty('player')
+  })
+
   it('rejects malformed player tokens without mutating lobby seats or activity', () => {
     const room = rooms.createRoom()
     const activityBefore = room.lastActivityAt
