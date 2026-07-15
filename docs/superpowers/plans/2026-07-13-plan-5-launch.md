@@ -150,7 +150,7 @@ TypeScript regression tests and preserve the original success-ack funnel timing.
 
 ### Task 6: Host-screen QR code
 
-- [ ] **Step 1:** `pnpm --filter @hpg/web add qrcode.react`. In the host lobby, next to the room code:
+- [x] **Step 1:** `pnpm --filter @hpg/web add qrcode.react`. In the host lobby, next to the room code:
 ```tsx
 import { QRCodeSVG } from 'qrcode.react'
 // in the lobby JSX:
@@ -158,6 +158,8 @@ import { QRCodeSVG } from 'qrcode.react'
 ```
 (The join page already prefills from `?code=` — plan 1.)
 - [ ] **Step 2:** Verify a real phone camera joins via the QR. Commit: `feat: QR code join on host screen`.
+
+  Pending: this requires a physical phone on the same reachable deployment or local network.
 
 ---
 

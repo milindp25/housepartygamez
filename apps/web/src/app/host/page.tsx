@@ -1,7 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
 import type { GameId, PackTone, RoomStateMsg } from '@hpg/shared'
+import { QRCodeSVG } from 'qrcode.react'
 import { track } from '@/lib/analytics'
+import { buildJoinUrl } from '@/lib/join-url'
 import { getSocket } from '@/lib/socket'
 import { GameHost } from '@/components/host/GameHost'
 
@@ -86,15 +88,31 @@ export default function HostPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-950 text-white">
-      <div className="space-y-6 text-center">
-        <p className="text-xl text-slate-400">Join at {window.location.host}/join with code</p>
-        <p
-          className="font-mono text-8xl font-bold tracking-[0.3em]"
-          data-testid="room-code"
-        >
-          {msg.code}
-        </p>
+    <main className="grid min-h-screen place-items-center bg-slate-950 p-4 text-white sm:p-8">
+      <div className="w-full max-w-5xl space-y-6 text-center">
+        <div className="flex flex-col items-center justify-center gap-6 sm:flex-row sm:gap-10">
+          <div className="min-w-0">
+            <p className="text-xl text-slate-400">Join at {window.location.host}/join with code</p>
+            <p
+              className="mt-3 font-mono text-6xl font-bold tracking-[0.2em] sm:text-8xl sm:tracking-[0.3em]"
+              data-testid="room-code"
+            >
+              {msg.code}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col items-center gap-2">
+            <QRCodeSVG
+              value={buildJoinUrl(window.location.origin, msg.code)}
+              size={160}
+              bgColor="#0f172a"
+              fgColor="#ffffff"
+              title="QR code to join this room"
+              role="img"
+              aria-label="QR code to join this room"
+            />
+            <p className="text-sm text-slate-300">Scan with your phone to join</p>
+          </div>
+        </div>
         <ul className="flex flex-wrap justify-center gap-3">
           {msg.players.map((p) => (
             <li
