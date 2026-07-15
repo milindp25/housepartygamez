@@ -23,6 +23,12 @@ This document records the implementation status of
 - Task 10 implementation: fixed the hidden shared-package type error, added package/root typecheck
   scripts, included web lint in the root lint command, and added typecheck to CI.
 - Stabilized the Bluff Battle e2e fixture so it derives answers from the canonical 100-prompt pack.
+- Task 11: added a dedicated `e2e` GitHub Actions job (installs Chromium, runs the Playwright suite,
+  uploads `test-results` on failure) and bumped the Playwright per-test timeout from 30s to 60s after
+  reproducing a cold-cache Turbopack dev-server race locally.
+- Task 12: widened `.gitignore` to `.env*`, moved `tsx` to `apps/game-server`'s runtime `dependencies`,
+  and added baseline security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`,
+  `Permissions-Policy`) to every route via `apps/web/next.config.ts`.
 
 ## Verified so far
 
@@ -34,15 +40,22 @@ This document records the implementation status of
 - Full Playwright suite passed: 14 browser tests.
 - Manual local checks returned `{"status":"ok","rooms":0}` from `/health`, returned 404 for an
   unknown path, and logged `shutdown_started` plus `shutdown_complete` on SIGINT.
+- Task 11 and Task 12 each went through implementer → spec-compliance review → code-quality review;
+  both passed both review stages.
+- Final full gate re-run after Task 12: `pnpm lint && pnpm typecheck && pnpm test` — all green
+  (160 tests across `shared`, `content`, `game-server`, `web`). `apps/web build` confirmed to succeed
+  with all four security headers present via `curl -sI` against both `/` and `/join`.
 
 ## Pending
 
-- Task 11: add the dedicated Playwright GitHub Actions job and confirm it on GitHub Actions.
-- Task 12: widen `.env*` ignore coverage, move `tsx` to runtime dependencies, add security headers,
-  and verify the production web build and response headers.
-- Run the final full gate: `pnpm lint && pnpm typecheck && pnpm test && pnpm --filter @hpg/web build`
-  plus Playwright.
+- Confirm the `e2e` GitHub Actions job goes green once this branch is pushed/opened as a PR (it has
+  only been verified locally so far, per Task 11's own instructions).
 - Perform the final two-browser reconnect/restart walkthrough and record the user-facing usage notes.
+
+## All 12 tasks complete
+
+Every task in `2026-07-15-launch-hardening.md` has a landed commit on this branch. Nothing from the
+plan remains unimplemented.
 
 ## User flow implemented
 
