@@ -8,7 +8,9 @@ const TILE_TINTS = ['text-chalk', 'text-honey', 'text-chalk', 'text-punch'] as c
  * Four-tile room-code entry backed by a single invisible `<input>` layered
  * over the tiles, so paste, autofill, Enter-to-submit, and `?code=` prefill
  * behave exactly like a plain text field while the tiles carry the visuals.
- * Every change is passed through {@link normalizeRoomCode}.
+ * Every change is passed through {@link normalizeRoomCode}. Deliberately no
+ * native maxLength: it would truncate a messy paste (e.g. "Code: PART")
+ * before normalization strips the noise — the normalizer's slice is the cap.
  */
 export function CodeInput({
   value,
@@ -25,7 +27,6 @@ export function CodeInput({
         value={value}
         onChange={(e) => onChange(normalizeRoomCode(e.target.value))}
         placeholder="ROOM CODE"
-        maxLength={4}
         autoCapitalize="characters"
         autoComplete="one-time-code"
         aria-label="Room code"
