@@ -58,7 +58,7 @@ export function ImposterHost({
                 name === view.currentSpeaker
                   ? 'font-bold text-chalk'
                   : i < view.speakingOrder.indexOf(view.currentSpeaker)
-                    ? 'text-mist/50 line-through'
+                    ? 'text-mist/60 line-through'
                     : 'text-mist'
               }
             >

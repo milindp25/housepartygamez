@@ -27,7 +27,7 @@ function playerGrid(view: MafiaHostView): React.ReactNode {
           className={`rounded-xl border px-4 py-3 text-center text-lg font-bold ${
             player.alive
               ? 'border-line bg-stage text-chalk'
-              : 'border-line/50 bg-plum/60 text-mist/50 line-through'
+              : 'border-line/50 bg-plum/60 text-mist/60 line-through'
           }`}
         >
           {!player.alive && '💀 '}

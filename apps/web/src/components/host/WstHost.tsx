@@ -45,15 +45,11 @@ export function WstHost({
   if (view.phase === 'guess') {
     return (
       <div className="space-y-8 text-center">
-        <PromptCard
-          meta={
-            <>
-              Answer {view.turn}/{view.totalTurns} <Countdown deadline={view.deadline} />
-            </>
-          }
-        >
-          {view.prompt.text}
-        </PromptCard>
+        <p className="text-mist">
+          Answer {view.turn}/{view.totalTurns} <Countdown deadline={view.deadline} />
+        </p>
+        {/* Kept small and muted: the anonymous answer below is the focal element. */}
+        <h2 className="text-2xl font-bold text-mist">{view.prompt.text}</h2>
         <blockquote className="mx-auto max-w-3xl rounded-2xl border border-orchid/50 bg-orchid/15 p-8 text-3xl">
           &ldquo;{view.answerText}&rdquo;
         </blockquote>
