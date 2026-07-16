@@ -18,5 +18,9 @@ export function Countdown({ deadline }: { deadline: number | null }) {
     return () => clearInterval(id)
   }, [deadline])
   if (deadline === null) return null
-  return <span className="rounded-full bg-slate-800 px-3 py-1 font-mono text-lg">{left}s</span>
+  return (
+    <span className="rounded-full border border-line bg-stage px-3 py-1 font-mono text-lg text-honey">
+      {left}s
+    </span>
+  )
 }

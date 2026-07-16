@@ -14,13 +14,15 @@ export function Leaderboard({
       {rows.map((r, i) => (
         <li
           key={r.playerId}
-          className="flex justify-between rounded-lg bg-slate-800 px-4 py-3 text-lg"
+          className={`flex justify-between rounded-xl border px-4 py-3 text-lg ${
+            i === 0 ? 'border-honey/60 bg-honey/10' : 'border-line bg-stage'
+          }`}
         >
           <span>
             {i === 0 ? '👑 ' : `${i + 1}. `}
             {r.nickname}
           </span>
-          <span className="text-slate-400">
+          <span className="text-mist">
             {r.score} {unit}
           </span>
         </li>
