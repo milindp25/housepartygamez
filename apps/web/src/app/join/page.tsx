@@ -5,8 +5,12 @@ import type { RoomStateMsg } from '@hpg/shared'
 import { track } from '@/lib/analytics'
 import { onConnectionChange, onReconnect } from '@/lib/reconnect'
 import { getPlayerToken, getSocket } from '@/lib/socket'
+import { normalizeRoomCode } from '@/lib/room-code'
 import { ConnectionBanner } from '@/components/ConnectionBanner'
 import { GamePlay } from '@/components/play/GamePlay'
+import { Button } from '@/components/ui/Button'
+import { CodeInput } from '@/components/ui/CodeInput'
+import { PlayerChips } from '@/components/ui/PlayerChips'
 
 /**
  * The phone-facing join flow. Renders a code + nickname form (the code is
@@ -16,7 +20,7 @@ import { GamePlay } from '@/components/play/GamePlay'
  */
 function JoinForm() {
   const params = useSearchParams()
-  const [code, setCode] = useState(params.get('code') ?? '')
+  const [code, setCode] = useState(() => normalizeRoomCode(params.get('code') ?? ''))
   const [nickname, setNickname] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [view, setView] = useState<RoomStateMsg | null>(null)
@@ -77,55 +81,43 @@ function JoinForm() {
   if (view) {
     if (view.phase === 'game' && view.game) {
       return (
-        <main className="min-h-screen bg-slate-950 p-6 text-white">
+        <main className="min-h-screen p-6 text-chalk">
           <ConnectionBanner connected={connected} />
           <GamePlay gameId={view.game.id} view={view.game.view} />
         </main>
       )
     }
     return (
-      <main className="min-h-screen bg-slate-950 p-6 text-white">
+      <main className="min-h-screen p-6 text-chalk">
         <ConnectionBanner connected={connected} />
-        <h1 className="mb-4 text-2xl font-bold">Room {view.code}</h1>
-        <p className="mb-2 text-slate-400">Waiting for the host to start…</p>
-        <ul className="space-y-2">
-          {view.players.map((p) => (
-            <li key={p.id} className={p.connected ? '' : 'text-slate-500 line-through'}>
-              {p.nickname}
-            </li>
-          ))}
-        </ul>
+        <h1 className="mb-1 text-2xl font-bold">Room {view.code}</h1>
+        <p className="mb-4 text-mist">Waiting for the host to start…</p>
+        <PlayerChips players={view.players} />
       </main>
     )
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-950 p-6 text-white">
+    <main className="grid min-h-screen place-items-center p-6 text-chalk">
       <form onSubmit={join} className="flex w-full max-w-sm flex-col gap-4">
         <h1 className="text-center text-3xl font-bold">Join a game</h1>
-        <input
-          value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
-          placeholder="ROOM CODE"
-          maxLength={4}
-          autoCapitalize="characters"
-          className="rounded-lg bg-slate-800 p-4 text-center font-mono text-2xl tracking-[0.3em]"
-        />
+        <CodeInput value={code} onChange={setCode} />
         <input
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
           placeholder="Your nickname"
           maxLength={20}
-          className="rounded-lg bg-slate-800 p-4 text-lg"
+          aria-label="Your nickname"
+          className="rounded-xl border border-line bg-stage p-4 text-lg text-chalk placeholder:text-mist"
         />
-        {error && <p className="text-center text-red-400">{error}</p>}
-        <button
-          type="submit"
-          disabled={code.length !== 4 || !nickname.trim()}
-          className="rounded-lg bg-emerald-600 p-4 text-lg font-bold disabled:opacity-40"
-        >
+        {error && (
+          <p role="alert" className="text-center text-red-400">
+            {error}
+          </p>
+        )}
+        <Button type="submit" size="lg" disabled={code.length !== 4 || !nickname.trim()}>
           Join
-        </button>
+        </Button>
       </form>
     </main>
   )
