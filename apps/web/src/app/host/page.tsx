@@ -183,12 +183,15 @@ export default function HostPage() {
                 ))}
               </div>
             )}
-            {confirmSpicy ? (
+            {confirmSpicy && needsSpicyConfirm ? (
               <section className="mx-auto max-w-md space-y-3 rounded-2xl border border-punch/50 bg-punch/10 p-5">
                 <p className="text-lg font-bold">Spicy pack is 18+.</p>
                 <p className="text-mist">Make sure everyone in the room is an adult.</p>
                 <div className="flex flex-wrap justify-center gap-3">
-                  <Button onClick={doStart}>Everyone&apos;s 18+ — start</Button>
+                  {/* autoFocus: the Start button this section replaced had focus. */}
+                  <Button autoFocus onClick={doStart}>
+                    Everyone&apos;s 18+ — start
+                  </Button>
                   <Button variant="secondary" onClick={() => setConfirmSpicy(false)}>
                     Cancel
                   </Button>
