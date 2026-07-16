@@ -11,7 +11,7 @@ export interface MarketingGame {
   maxPlayers: number
   minutes: number
   howTo: readonly string[]
-  accent: '#7C3AED' | '#A3E635' | '#FB7185' | '#22D3EE'
+  accent: '#F97316' | '#FBBF24' | '#EC4899' | '#C084FC'
 }
 
 /** The complete public game catalog in landing-page display order. */
@@ -32,7 +32,7 @@ export const MARKETING_GAMES: readonly MarketingGame[] = [
       'Choose your answer privately on your phone.',
       'Reveal the split together and debate the result.',
     ],
-    accent: '#7C3AED',
+    accent: '#F97316',
   },
   {
     id: 'most-likely-to',
@@ -50,7 +50,7 @@ export const MARKETING_GAMES: readonly MarketingGame[] = [
       'Vote privately for the friend who fits best.',
       'Reveal the tally and share the stories behind it.',
     ],
-    accent: '#A3E635',
+    accent: '#FBBF24',
   },
   {
     id: 'never-have-i-ever',
@@ -68,7 +68,7 @@ export const MARKETING_GAMES: readonly MarketingGame[] = [
       'Choose “I have” or “Never” on your phone.',
       'Reveal the confessions and compare the final results.',
     ],
-    accent: '#FB7185',
+    accent: '#EC4899',
   },
   {
     id: 'who-said-that',
@@ -86,7 +86,7 @@ export const MARKETING_GAMES: readonly MarketingGame[] = [
       'Identify the friend you think wrote each answer.',
       'Reveal every author and compare the room’s deductions.',
     ],
-    accent: '#22D3EE',
+    accent: '#C084FC',
   },
   {
     id: 'imposter',
@@ -104,7 +104,7 @@ export const MARKETING_GAMES: readonly MarketingGame[] = [
       'Listen closely and discuss who seems out of place.',
       'Vote for the suspected imposter and reveal the result.',
     ],
-    accent: '#FB7185',
+    accent: '#F97316',
   },
   {
     id: 'bluff-battle',
@@ -122,7 +122,7 @@ export const MARKETING_GAMES: readonly MarketingGame[] = [
       'Choose the truth from the shuffled answer list.',
       'Reveal the fact and score truth picks and successful bluffs.',
     ],
-    accent: '#A3E635',
+    accent: '#FBBF24',
   },
   {
     id: 'mafia',
@@ -140,7 +140,7 @@ export const MARKETING_GAMES: readonly MarketingGame[] = [
       'Debate the evidence together when daylight returns.',
       'Vote out a suspect before the opposing side takes control.',
     ],
-    accent: '#7C3AED',
+    accent: '#EC4899',
   },
 ]
 

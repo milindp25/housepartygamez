@@ -1,23 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --midnight: #070b16;
-  --stage: #11182a;
-  --chalk: #f8fafc;
-  --iris: #7c3aed;
-  --lime: #a3e635;
-  --coral: #fb7185;
-  --cyan: #22d3ee;
-  --background: var(--midnight);
+  --plum: #1c1420;
+  --stage: #2a1f2b;
+  --chalk: #fdf4ec;
+  --flame: #f97316;
+  --punch: #ec4899;
+  --honey: #fbbf24;
+  --orchid: #c084fc;
+  --background: var(--plum);
   --foreground: var(--chalk);
-  --muted: #aeb9ce;
-  --line: rgb(248 250 252 / 14%);
+  --mist: #c4b3bc;
+  --line: rgb(253 244 236 / 14%);
   color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-plum: var(--plum);
+  --color-stage: var(--stage);
+  --color-chalk: var(--chalk);
+  --color-mist: var(--mist);
+  --color-flame: var(--flame);
+  --color-punch: var(--punch);
+  --color-honey: var(--honey);
+  --color-orchid: var(--orchid);
+  --color-line: var(--line);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -29,9 +38,9 @@
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 78% 7%, rgb(124 58 237 / 24%), transparent 26rem),
-    radial-gradient(circle at 8% 42%, rgb(34 211 238 / 10%), transparent 30rem),
-    var(--midnight);
+    radial-gradient(circle at 78% 7%, rgb(249 115 22 / 24%), transparent 26rem),
+    radial-gradient(circle at 8% 42%, rgb(236 72 153 / 10%), transparent 30rem),
+    var(--plum);
   color: var(--chalk);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
@@ -41,7 +50,7 @@ a {
 }
 
 :focus-visible {
-  outline: 3px solid var(--lime);
+  outline: 3px solid var(--honey);
   outline-offset: 4px;
 }
 
@@ -51,8 +60,8 @@ a {
   left: 1rem;
   z-index: 100;
   border-radius: 0.5rem;
-  background: var(--lime);
-  color: var(--midnight);
+  background: var(--honey);
+  color: var(--plum);
   padding: 0.75rem 1rem;
   font-weight: 800;
   text-decoration: none;
@@ -89,7 +98,7 @@ a {
 
 .site-header > p,
 .site-footer > p:last-child {
-  color: var(--muted);
+  color: var(--mist);
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.72rem;
   letter-spacing: 0.08em;
@@ -111,10 +120,10 @@ a {
   width: 2rem;
   aspect-ratio: 1;
   place-items: center;
-  border: 1px solid rgb(248 250 252 / 30%);
+  border: 1px solid rgb(253 244 236 / 30%);
   border-radius: 0.45rem;
   background: var(--stage);
-  color: var(--cyan);
+  color: var(--orchid);
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.72rem;
   letter-spacing: -0.08em;
@@ -144,7 +153,7 @@ a {
 
 .eyebrow {
   margin: 0 0 1rem;
-  color: var(--cyan);
+  color: var(--orchid);
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.72rem;
   font-weight: 700;
@@ -155,7 +164,7 @@ a {
 .hero-lede {
   max-width: 38rem;
   margin: 1.75rem 0 0;
-  color: var(--muted);
+  color: var(--mist);
   font-size: clamp(1rem, 2vw, 1.2rem);
   line-height: 1.7;
 }
@@ -180,28 +189,28 @@ a {
 }
 
 .button-primary {
-  background: var(--iris);
-  box-shadow: 0 0 2rem rgb(124 58 237 / 22%);
-  color: var(--chalk);
+  background: linear-gradient(90deg, var(--flame), var(--punch));
+  box-shadow: 0 0 2rem rgb(236 72 153 / 25%);
+  color: var(--plum);
 }
 
 .button-secondary {
-  border-color: rgb(248 250 252 / 25%);
-  background: rgb(248 250 252 / 5%);
+  border-color: rgb(253 244 236 / 25%);
+  background: rgb(253 244 236 / 5%);
   color: var(--chalk);
 }
 
 .marquee-stage {
   position: relative;
   overflow: clip;
-  border: 1px solid rgb(248 250 252 / 16%);
+  border: 1px solid rgb(253 244 236 / 16%);
   border-radius: 1.5rem;
   background:
-    linear-gradient(145deg, rgb(248 250 252 / 7%), transparent 45%),
+    linear-gradient(145deg, rgb(253 244 236 / 7%), transparent 45%),
     rgb(17 24 42 / 88%);
   box-shadow:
     0 2rem 6rem rgb(0 0 0 / 35%),
-    inset 0 1px rgb(248 250 252 / 8%);
+    inset 0 1px rgb(253 244 236 / 8%);
   padding: clamp(1.25rem, 4vw, 2rem);
 }
 
@@ -210,7 +219,7 @@ a {
   inset: -2.5rem;
   z-index: -1;
   border-radius: 50%;
-  background: radial-gradient(circle, rgb(124 58 237 / 25%), transparent 65%);
+  background: radial-gradient(circle, rgb(249 115 22 / 25%), transparent 65%);
   content: "";
   filter: blur(2rem);
 }
@@ -218,7 +227,7 @@ a {
 .marquee-label,
 .marquee-note {
   margin: 0;
-  color: var(--muted);
+  color: var(--mist);
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.68rem;
   letter-spacing: 0.12em;
@@ -237,12 +246,12 @@ a {
   min-width: 0;
   aspect-ratio: 0.78;
   place-items: center;
-  border: 1px solid rgb(248 250 252 / 20%);
+  border: 1px solid rgb(253 244 236 / 20%);
   border-radius: 0.55rem;
-  background: var(--midnight);
+  background: var(--plum);
   box-shadow:
     inset 0 -0.3rem 0 rgb(0 0 0 / 30%),
-    0 0 1.4rem rgb(34 211 238 / 8%);
+    0 0 1.4rem rgb(192 132 252 / 8%);
   color: var(--chalk);
   font-family: var(--font-geist-mono), monospace;
   font-size: clamp(1.4rem, 4.5vw, 3rem);
@@ -251,11 +260,11 @@ a {
 
 .room-code-marquee span:nth-child(2),
 .room-code-marquee span:nth-child(5) {
-  color: var(--lime);
+  color: var(--honey);
 }
 
 .room-code-marquee span:last-child {
-  color: var(--coral);
+  color: var(--punch);
 }
 
 .process-section,
@@ -292,7 +301,7 @@ a {
 .section-heading-wide > p {
   max-width: 26rem;
   margin: 0;
-  color: var(--muted);
+  color: var(--mist);
   line-height: 1.6;
 }
 
@@ -322,7 +331,7 @@ a {
 }
 
 .step-number {
-  color: var(--lime);
+  color: var(--honey);
   font-size: 0.75rem;
   letter-spacing: 0.12em;
 }
@@ -336,7 +345,7 @@ a {
 .process-list p {
   max-width: 42rem;
   margin: 0.55rem 0 0;
-  color: var(--muted);
+  color: var(--mist);
   line-height: 1.65;
 }
 
@@ -363,7 +372,7 @@ a {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  color: var(--muted);
+  color: var(--mist);
   font-size: 0.68rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -391,7 +400,7 @@ a {
 .game-card > p {
   max-width: 30rem;
   margin: 0;
-  color: var(--muted);
+  color: var(--mist);
   line-height: 1.55;
 }
 
@@ -412,10 +421,10 @@ a {
   justify-content: space-between;
   gap: 3rem;
   margin-block: clamp(3rem, 8vw, 7rem);
-  border: 1px solid rgb(163 230 53 / 32%);
+  border: 1px solid rgb(251 191 36 / 32%);
   border-radius: 1.25rem;
   background:
-    radial-gradient(circle at 80% 0%, rgb(163 230 53 / 13%), transparent 38%),
+    radial-gradient(circle at 80% 0%, rgb(251 191 36 / 13%), transparent 38%),
     var(--stage);
   padding: clamp(1.5rem, 5vw, 3.5rem);
 }
@@ -459,7 +468,7 @@ a {
 .breadcrumb {
   display: flex;
   gap: 0.7rem;
-  color: var(--muted);
+  color: var(--mist);
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -489,7 +498,7 @@ a {
 .detail-tagline {
   max-width: 34rem;
   margin: 1.5rem 0 0;
-  color: var(--muted);
+  color: var(--mist);
   font-size: clamp(1.15rem, 2vw, 1.45rem);
   line-height: 1.5;
 }
@@ -508,7 +517,7 @@ a {
 }
 
 .detail-facts dt {
-  color: var(--muted);
+  color: var(--mist);
   font-size: 0.65rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -533,7 +542,7 @@ a {
 
 .detail-description > p:last-child {
   margin: 1.5rem 0 0;
-  color: var(--muted);
+  color: var(--mist);
   font-size: 1.05rem;
   line-height: 1.8;
 }
@@ -554,7 +563,7 @@ a {
 }
 
 .detail-steps li > span {
-  color: var(--cyan);
+  color: var(--orchid);
   font-size: 0.72rem;
 }
 
@@ -629,14 +638,45 @@ a {
       transform: translateY(0);
       box-shadow:
         inset 0 -0.3rem 0 rgb(0 0 0 / 30%),
-        0 0 1.4rem rgb(34 211 238 / 8%);
+        0 0 1.4rem rgb(192 132 252 / 8%);
     }
 
     to {
       transform: translateY(-0.3rem);
       box-shadow:
         inset 0 -0.3rem 0 rgb(0 0 0 / 30%),
-        0 0 2rem rgb(124 58 237 / 25%);
+        0 0 2rem rgb(249 115 22 / 25%);
+    }
+  }
+
+  .player-chip {
+    animation: chip-pop 240ms ease;
+  }
+
+  .waiting-pulse {
+    animation: waiting-pulse 2.4s ease-in-out infinite;
+  }
+
+  @keyframes chip-pop {
+    from {
+      transform: scale(0.85);
+      opacity: 0;
+    }
+
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes waiting-pulse {
+    0%,
+    100% {
+      opacity: 0.5;
+    }
+
+    50% {
+      opacity: 1;
     }
   }
 }
