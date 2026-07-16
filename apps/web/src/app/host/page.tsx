@@ -1,13 +1,16 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import type { GameId, PackTone, RoomStateMsg } from '@hpg/shared'
-import { QRCodeSVG } from 'qrcode.react'
 import { track } from '@/lib/analytics'
 import { buildJoinUrl } from '@/lib/join-url'
 import { onConnectionChange, onReconnect } from '@/lib/reconnect'
 import { getSocket } from '@/lib/socket'
 import { ConnectionBanner } from '@/components/ConnectionBanner'
 import { GameHost } from '@/components/host/GameHost'
+import { Button } from '@/components/ui/Button'
+import { Pill } from '@/components/ui/Pill'
+import { PlayerChips } from '@/components/ui/PlayerChips'
+import { RoomCodePanel } from '@/components/ui/RoomCodePanel'
 
 const TONES: PackTone[] = ['family', 'friends', 'spicy']
 
@@ -45,6 +48,7 @@ export default function HostPage() {
   const [error, setError] = useState<string | null>(null)
   const [fatal, setFatal] = useState<string | null>(null)
   const [connected, setConnected] = useState(true)
+  const [confirmSpicy, setConfirmSpicy] = useState(false)
   const createdRef = useRef(false)
 
   useEffect(() => {
@@ -84,14 +88,20 @@ export default function HostPage() {
     })
   }, [roomCode])
 
+  const needsSpicyConfirm = gameId !== 'mafia' && tone === 'spicy'
+
+  /** First click on Start arms the inline 18+ confirm for spicy packs. */
   function startGame() {
-    // Spicy packs are adult-only: the host confirms once, for the room (spec: 18+ gate).
-    if (
-      gameId !== 'mafia' &&
-      tone === 'spicy' &&
-      !window.confirm('Spicy pack is 18+. Everyone in the room is an adult?')
-    )
+    if (needsSpicyConfirm && !confirmSpicy) {
+      setConfirmSpicy(true)
       return
+    }
+    doStart()
+  }
+
+  /** Emit game:start; the server enforces game/pack validity. */
+  function doStart() {
+    setConfirmSpicy(false)
     setError(null)
     getSocket().emit('game:start', { gameId, tone }, (res) => {
       if (!res.ok) {
@@ -104,16 +114,19 @@ export default function HostPage() {
 
   if (fatal) {
     return (
-      <main className="grid min-h-screen place-items-center bg-slate-950 p-8 text-white">
-        <p className="text-xl text-red-400">{fatal}</p>
+      <main className="grid min-h-screen place-items-center p-8 text-chalk">
+        <p role="alert" className="text-xl text-red-400">
+          {fatal}
+        </p>
       </main>
     )
   }
-  if (!msg) return <main className="grid min-h-screen place-items-center">Creating room…</main>
+  if (!msg)
+    return <main className="grid min-h-screen place-items-center text-mist">Creating room…</main>
 
   if (msg.phase === 'game' && msg.game) {
     return (
-      <main className="grid min-h-screen place-items-center bg-slate-950 p-8 text-white">
+      <main className="grid min-h-screen place-items-center p-8 text-chalk">
         <ConnectionBanner connected={connected} />
         <GameHost
           gameId={msg.game.id}
@@ -128,88 +141,69 @@ export default function HostPage() {
   const joinUrl = buildJoinUrl(window.location.origin, msg.code)
 
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-950 p-4 text-white sm:p-8">
+    <main className="grid min-h-screen place-items-center p-4 text-chalk sm:p-8">
       <div className="w-full max-w-5xl space-y-6 text-center">
         <ConnectionBanner connected={connected} />
-        <div className="flex flex-col items-center justify-center gap-6 sm:flex-row sm:gap-10">
-          <div className="min-w-0">
-            <p className="text-xl text-slate-400">Join at {window.location.host}/join with code</p>
-            <p
-              className="mt-3 font-mono text-6xl font-bold tracking-[0.2em] sm:text-8xl sm:tracking-[0.3em]"
-              data-testid="room-code"
-            >
-              {msg.code}
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-col items-center gap-2">
-            <a
-              href={joinUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Open join page for this room"
-            >
-              <QRCodeSVG
-                value={joinUrl}
-                size={160}
-                bgColor="#ffffff"
-                fgColor="#0f172a"
-                marginSize={4}
-                level="M"
-                title="QR code to join this room"
-                role="img"
-                aria-label="QR code to join this room"
-              />
-            </a>
-            <p className="text-sm text-slate-300">Scan with your phone to join</p>
-          </div>
-        </div>
-        <ul className="flex flex-wrap justify-center gap-3">
-          {msg.players.map((p) => (
-            <li
-              key={p.id}
-              className={`rounded-full px-4 py-2 text-lg ${p.connected ? 'bg-emerald-600' : 'bg-slate-700 line-through'}`}
-            >
-              {p.nickname}
-            </li>
-          ))}
-        </ul>
+        <RoomCodePanel code={msg.code} joinUrl={joinUrl} joinHost={window.location.host} />
+        <PlayerChips players={msg.players} />
         {msg.players.length === 0 ? (
-          <p className="text-slate-500">Waiting for players…</p>
+          <p className="waiting-pulse text-mist">Waiting for players…</p>
         ) : (
           <div className="space-y-4">
             <div className="flex flex-wrap justify-center gap-2">
               {GAMES.map((g) => (
-                <button
+                <Pill
                   key={g.id}
-                  onClick={() => setGameId(g.id)}
-                  className={`rounded-full px-4 py-2 ${gameId === g.id ? 'bg-indigo-600' : 'bg-slate-800'}`}
+                  selected={gameId === g.id}
+                  onClick={() => {
+                    setGameId(g.id)
+                    setConfirmSpicy(false)
+                  }}
                 >
                   {g.name}
-                  {g.note && <span className="ml-2 text-xs text-slate-300">{g.note}</span>}
-                </button>
+                  {g.note && <span className="ml-2 text-xs opacity-70">{g.note}</span>}
+                </Pill>
               ))}
             </div>
             {gameId !== 'mafia' && (
               <div className="flex justify-center gap-2">
                 {TONES.map((t) => (
-                  <button
+                  <Pill
                     key={t}
-                    onClick={() => setTone(t)}
-                    className={`rounded-full px-4 py-2 capitalize ${tone === t ? 'bg-indigo-600' : 'bg-slate-800'}`}
+                    selected={tone === t}
+                    className="capitalize"
+                    onClick={() => {
+                      setTone(t)
+                      setConfirmSpicy(false)
+                    }}
                   >
                     {t}
                     {t === 'spicy' && ' 🔞'}
-                  </button>
+                  </Pill>
                 ))}
               </div>
             )}
-            <button
-              onClick={startGame}
-              className="rounded-lg bg-emerald-600 px-8 py-4 text-xl font-bold"
-            >
-              Start {GAMES.find((g) => g.id === gameId)?.name}
-            </button>
-            {error && <p className="text-red-400">{error}</p>}
+            {confirmSpicy ? (
+              <section className="mx-auto max-w-md space-y-3 rounded-2xl border border-punch/50 bg-punch/10 p-5">
+                <p className="text-lg font-bold">Spicy pack is 18+.</p>
+                <p className="text-mist">Make sure everyone in the room is an adult.</p>
+                <div className="flex flex-wrap justify-center gap-3">
+                  <Button onClick={doStart}>Everyone&apos;s 18+ — start</Button>
+                  <Button variant="secondary" onClick={() => setConfirmSpicy(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </section>
+            ) : (
+              <Button size="lg" onClick={startGame}>
+                Start {GAMES.find((g) => g.id === gameId)?.name}
+              </Button>
+            )}
+            {error && (
+              <p role="alert" className="text-red-400">
+                {error}
+              </p>
+            )}
           </div>
         )}
       </div>
