@@ -17,6 +17,7 @@ import {
 } from '@hpg/shared'
 import { getPack } from '@hpg/content'
 import { logger } from './logger'
+import { RateLimiter } from './rateLimiter'
 import { RoomManager, type Room } from './roomManager'
 import { RoomTimers } from './timers'
 
@@ -83,9 +84,23 @@ export function resolveCorsOrigin(env: {
 export function attachGameServer(
   httpServer: HttpServer,
   rooms = new RoomManager(),
-  opts: { maxRooms?: number } = {},
+  opts: {
+    maxRooms?: number
+    /** Per-IP budget for `room:create`. Guards the global room cap from being
+     * exhausted by one script in milliseconds, locking out every real host. */
+    roomCreateLimit?: { max: number; windowMs: number }
+    /** Per-IP budget for `room:join` attempts (successful or not). Room codes
+     * are only a 4-letter, 24-symbol alphabet (331,776 combinations) — with no
+     * limit here, an attacker can brute-force any live room's code and join
+     * it as an uninvited player in well under a second. */
+    joinAttemptLimit?: { max: number; windowMs: number }
+  } = {},
 ) {
   const maxRooms = opts.maxRooms ?? 500
+  const roomCreateLimiter = new RateLimiter(
+    opts.roomCreateLimit ?? { max: 20, windowMs: 10 * 60_000 },
+  )
+  const joinAttemptLimiter = new RateLimiter(opts.joinAttemptLimit ?? { max: 30, windowMs: 60_000 })
   const io = new Server<
     ClientToServerEvents,
     ServerToClientEvents,
@@ -93,6 +108,13 @@ export function attachGameServer(
     SocketData
   >(httpServer, { cors: { origin: resolveCorsOrigin(process.env) } })
   const timers = new RoomTimers()
+
+  /** Best-effort client identity for rate limiting. Not spoof-proof behind a
+   * misconfigured proxy, but matches what `socket.handshake.address` gives us
+   * with no additional infra — a real improvement over no limit at all. */
+  function clientKey(socket: { handshake: { address: string } }): string {
+    return socket.handshake.address
+  }
 
   /**
    * Send every socket in the room ITS OWN personalized snapshot. Host
@@ -172,6 +194,10 @@ export function attachGameServer(
         log.warn({ event: 'room_create_rejected', reason: 'missing acknowledgement' })
         return
       }
+      if (!roomCreateLimiter.attempt(clientKey(socket))) {
+        log.warn({ event: 'room_create_rejected', reason: 'rate limited' })
+        return ack({ ok: false, error: 'Too many rooms created — try again in a few minutes' })
+      }
       if (rooms.roomCount >= maxRooms) {
         log.warn({
           event: 'room_create_rejected',
@@ -220,6 +246,10 @@ export function attachGameServer(
       if (typeof ack !== 'function') {
         log.warn({ event: 'join_rejected', reason: 'missing acknowledgement' })
         return
+      }
+      if (!joinAttemptLimiter.attempt(clientKey(socket))) {
+        log.warn({ event: 'join_rejected', reason: 'rate limited' })
+        return ack({ ok: false, error: 'Too many attempts — try again in a minute' })
       }
       if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
         log.warn({ event: 'join_rejected', reason: 'invalid request' })
@@ -393,5 +423,12 @@ export function attachGameServer(
     })
   })
 
-  return { io, rooms, timers }
+  /** Drop rate-limit entries for IPs with no recent attempts, so a long-lived
+   * process doesn't accumulate one unbounded Map entry per distinct visitor. */
+  function sweepRateLimiters(): void {
+    roomCreateLimiter.sweep()
+    joinAttemptLimiter.sweep()
+  }
+
+  return { io, rooms, timers, sweepRateLimiters }
 }

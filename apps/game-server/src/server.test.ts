@@ -72,7 +72,15 @@ const bluffFamilyAnswers = Object.fromEntries(
 
 beforeAll(async () => {
   httpServer = createServer()
-  const attached = attachGameServer(httpServer)
+  // The shared suite below makes dozens of room:create/room:join calls from
+  // the same loopback IP — far more than production's per-IP rate limits
+  // allow. Give this instance a generous test-only budget; the rate limiter's
+  // actual throttling behavior is covered by dedicated isolated-instance
+  // tests further down, the same pattern the maxRooms capacity test uses.
+  const attached = attachGameServer(httpServer, undefined, {
+    roomCreateLimit: { max: 10_000, windowMs: 60_000 },
+    joinAttemptLimit: { max: 10_000, windowMs: 60_000 },
+  })
   serverRooms = attached.rooms
   roomTimers = attached.timers
   await new Promise<void>((resolve) => httpServer.listen(0, resolve))
@@ -214,6 +222,67 @@ describe('game server sockets', () => {
     } finally {
       c.disconnect()
       await new Promise<void>((resolve) => capServer.close(() => resolve()))
+    }
+  })
+
+  it('rate-limits room:create per IP, independent of maxRooms', async () => {
+    const limitedServer = createServer()
+    attachGameServer(limitedServer, new RoomManager(), {
+      roomCreateLimit: { max: 2, windowMs: 60_000 },
+    })
+    await new Promise<void>((resolve) => limitedServer.listen(0, resolve))
+    const limitedUrl = `http://localhost:${(limitedServer.address() as AddressInfo).port}`
+    const c: Client = connect(limitedUrl, { transports: ['websocket'] })
+    try {
+      expect((await c.emitWithAck('room:create')).ok).toBe(true)
+      expect((await c.emitWithAck('room:create')).ok).toBe(true)
+      expect(await c.emitWithAck('room:create')).toEqual({
+        ok: false,
+        error: 'Too many rooms created — try again in a few minutes',
+      })
+    } finally {
+      c.disconnect()
+      await new Promise<void>((resolve) => limitedServer.close(() => resolve()))
+    }
+  })
+
+  it('rate-limits room:join attempts per IP — including a room-code brute-force spread across many sockets', async () => {
+    const limitedServer = createServer()
+    attachGameServer(limitedServer, new RoomManager(), {
+      joinAttemptLimit: { max: 3, windowMs: 60_000 },
+    })
+    await new Promise<void>((resolve) => limitedServer.listen(0, resolve))
+    const limitedUrl = `http://localhost:${(limitedServer.address() as AddressInfo).port}`
+    const host: Client = connect(limitedUrl, { transports: ['websocket'] })
+    const created = await host.emitWithAck('room:create')
+    if (!created.ok) throw new Error(created.error)
+    try {
+      // Three failed guesses from three DIFFERENT sockets — same machine, same
+      // IP, which is exactly the multi-connection brute-force shape a real
+      // attacker uses to get around a naive per-socket limit.
+      for (let i = 0; i < 3; i++) {
+        const guesser: Client = connect(limitedUrl, { transports: ['websocket'] })
+        const res = await guesser.emitWithAck('room:join', {
+          code: 'ZZZZ',
+          nickname: 'Guesser',
+          playerToken: `tok-${i}`,
+        })
+        expect(res).toEqual({ ok: false, error: 'Room not found' })
+        guesser.disconnect()
+      }
+      // A fourth attempt from yet another socket, same IP — even the REAL
+      // code should now be rejected by the rate limit, not looked up.
+      const fourth: Client = connect(limitedUrl, { transports: ['websocket'] })
+      const res = await fourth.emitWithAck('room:join', {
+        code: created.code,
+        nickname: 'TooLate',
+        playerToken: 'tok-real',
+      })
+      expect(res).toEqual({ ok: false, error: 'Too many attempts — try again in a minute' })
+      fourth.disconnect()
+    } finally {
+      host.disconnect()
+      await new Promise<void>((resolve) => limitedServer.close(() => resolve()))
     }
   })
 

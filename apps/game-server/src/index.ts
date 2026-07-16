@@ -25,7 +25,7 @@ if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
 // whatever listeners exist at attach time and forwards non-/socket.io paths.
 const rooms = new RoomManager()
 const httpServer = createServer(createHealthHandler(rooms))
-const { io, timers } = attachGameServer(httpServer, rooms)
+const { io, timers, sweepRateLimiters } = attachGameServer(httpServer, rooms)
 
 const sweepInterval = setInterval(() => {
   const expired = rooms.sweepExpired(ROOM_IDLE_MS, EMPTY_LOBBY_IDLE_MS)
@@ -37,6 +37,10 @@ const sweepInterval = setInterval(() => {
     io.in(code).disconnectSockets()
   }
 }, SWEEP_INTERVAL_MS)
+
+// Same cadence as the room sweep — keeps the rate limiters' per-IP maps from
+// growing unbounded over the process lifetime.
+const rateLimiterSweepInterval = setInterval(sweepRateLimiters, SWEEP_INTERVAL_MS)
 
 // Last-resort safety net: log the failure as structured JSON, then exit so
 // the platform restarts us into a known-good state. Never try to keep serving
@@ -54,6 +58,7 @@ process.on('unhandledRejection', (reason) => {
 function shutdown(signal: string): void {
   logger.info({ event: 'shutdown_started', signal })
   clearInterval(sweepInterval)
+  clearInterval(rateLimiterSweepInterval)
   // io.close() also closes the HTTP server it is attached to.
   void io.close(() => {
     logger.info({ event: 'shutdown_complete' })
