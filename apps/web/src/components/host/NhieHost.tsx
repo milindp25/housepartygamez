@@ -2,6 +2,8 @@
 import type { NhieHostView } from '@hpg/shared'
 import { Countdown } from '../Countdown'
 import { Leaderboard } from '../Leaderboard'
+import { Button } from '../ui/Button'
+import { PromptCard } from '../ui/PromptCard'
 
 /** TV rendering of Never Have I Ever. */
 export function NhieHost({
@@ -20,50 +22,48 @@ export function NhieHost({
           {view.elimination ? 'Last one standing' : 'Most innocent'}
         </h2>
         <Leaderboard rows={view.leaderboard} unit={view.elimination ? 'strikes' : '"I have"s'} />
-        <button onClick={onEnd} className="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-bold">
-          Back to lobby
-        </button>
+        <Button onClick={onEnd}>Back to lobby</Button>
       </div>
     )
   }
   return (
     <div className="space-y-8 text-center">
-      <p className="text-slate-400">
-        Round {view.round}/{view.totalRounds}{' '}
-        {view.phase === 'answer' && <Countdown deadline={view.deadline} />}
-      </p>
-      <h2 className="text-4xl font-bold">Never have I ever {view.prompt.text}</h2>
+      <PromptCard
+        meta={
+          <>
+            Round {view.round}/{view.totalRounds}{' '}
+            {view.phase === 'answer' && <Countdown deadline={view.deadline} />}
+          </>
+        }
+      >
+        Never have I ever {view.prompt.text}
+      </PromptCard>
       {view.phase === 'answer' && (
-        <p className="text-xl text-slate-400">
+        <p className="text-xl text-mist">
           {view.answeredCount}/{view.totalPlayers} answered
         </p>
       )}
       {view.phase === 'reveal' && (
         <>
           <p className="text-7xl font-bold">{view.yesCount}</p>
-          <p className="text-slate-400">
+          <p className="text-mist">
             {view.yesCount === 1 ? 'person has' : 'people have'}
           </p>
           {view.yesNames && view.yesNames.length > 0 && (
             <ul className="flex flex-wrap justify-center gap-2">
               {view.yesNames.map((n) => (
-                <li key={n} className="rounded-full bg-rose-700 px-4 py-2">
+                <li key={n} className="rounded-full border border-punch/50 bg-punch/15 px-4 py-2">
                   {n}
                 </li>
               ))}
             </ul>
           )}
           {view.eliminatedNow.length > 0 && (
-            <p className="rounded-lg bg-amber-600 px-4 py-2">
+            <p className="rounded-lg border border-honey/60 bg-honey/15 text-honey px-4 py-2">
               Eliminated: {view.eliminatedNow.join(', ')} 🍿
             </p>
           )}
-          <button
-            onClick={onAdvance}
-            className="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-bold"
-          >
-            Next
-          </button>
+          <Button onClick={onAdvance}>Next</Button>
         </>
       )}
     </div>

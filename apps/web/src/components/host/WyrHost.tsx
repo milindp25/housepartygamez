@@ -2,6 +2,8 @@
 import type { WyrHostView } from '@hpg/shared'
 import { Countdown } from '../Countdown'
 import { Leaderboard } from '../Leaderboard'
+import { Button } from '../ui/Button'
+import { PromptCard } from '../ui/PromptCard'
 
 /**
  * TV rendering of Would You Rather. Pure renderer: `view` in, pixels out.
@@ -23,42 +25,38 @@ export function WyrHost({
       <div className="space-y-6 text-center">
         <h2 className="text-4xl font-bold">Most in the majority</h2>
         <Leaderboard rows={view.leaderboard} unit="rounds" />
-        <button onClick={onEnd} className="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-bold">
-          Back to lobby
-        </button>
+        <Button onClick={onEnd}>Back to lobby</Button>
       </div>
     )
   }
   return (
     <div className="space-y-8 text-center">
-      <p className="text-slate-400">
-        Round {view.round}/{view.totalRounds}{' '}
-        <Countdown deadline={'deadline' in view ? view.deadline : null} />
-      </p>
-      <h2 className="text-4xl font-bold">Would you rather…</h2>
+      <PromptCard
+        meta={
+          <>
+            Round {view.round}/{view.totalRounds}{' '}
+            <Countdown deadline={'deadline' in view ? view.deadline : null} />
+          </>
+        }
+      >
+        Would you rather…
+      </PromptCard>
       <div className="mx-auto grid max-w-3xl grid-cols-2 gap-6 text-2xl">
-        <div className="rounded-2xl bg-indigo-700 p-8">
+        <div className="rounded-2xl border border-orchid/50 bg-orchid/15 p-8">
           {view.prompt.a}
           {view.phase === 'reveal' && <p className="mt-4 text-5xl font-bold">{view.counts.a}</p>}
         </div>
-        <div className="rounded-2xl bg-rose-700 p-8">
+        <div className="rounded-2xl border border-punch/50 bg-punch/15 p-8">
           {view.prompt.b}
           {view.phase === 'reveal' && <p className="mt-4 text-5xl font-bold">{view.counts.b}</p>}
         </div>
       </div>
       {view.phase === 'vote' && (
-        <p className="text-xl text-slate-400">
+        <p className="text-xl text-mist">
           {view.votedCount}/{view.totalPlayers} voted
         </p>
       )}
-      {view.phase === 'reveal' && (
-        <button
-          onClick={onAdvance}
-          className="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-bold"
-        >
-          Next
-        </button>
-      )}
+      {view.phase === 'reveal' && <Button onClick={onAdvance}>Next</Button>}
     </div>
   )
 }
