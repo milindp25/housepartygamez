@@ -1,0 +1,23 @@
+# Keep the build context small and host-agnostic. Never ship host node_modules
+# (wrong arch + huge) or build artifacts — the image installs deps fresh.
+**/node_modules
+**/.next
+**/dist
+**/*.tsbuildinfo
+**/test-results
+**/playwright-report
+
+# VCS, tooling, and local-only scratch.
+.git
+.github
+.claude
+.worktrees
+.superpowers
+**/.DS_Store
+
+# Secrets and env files must never enter an image layer.
+**/.env*
+
+# Docs and plans aren't needed at runtime.
+docs
+README.md

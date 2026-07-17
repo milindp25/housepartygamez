@@ -1,0 +1,30 @@
+# Render Blueprint for the HousePartyGamez game server.
+# https://render.com/docs/blueprint-spec
+#
+# The game server is stateful (in-memory rooms) and holds long-lived WebSocket
+# connections, so it runs as a persistent Web Service — never a serverless/edge
+# function. Import this file in Render via "New > Blueprint" pointed at the repo.
+services:
+  - type: web
+    name: housepartygamez-server
+    runtime: docker
+    # Build context is the repo root so the Dockerfile can see the whole
+    # pnpm workspace; the Dockerfile itself lives under the app.
+    dockerfilePath: ./apps/game-server/Dockerfile
+    dockerContext: .
+    # Free plan sleeps after ~15 min idle; a cold start drops in-memory rooms
+    # (handled gracefully — clients see "room expired, refresh"). Switch to
+    # "starter" for always-on once you have real traffic.
+    plan: free
+    region: oregon
+    # Render pings this to gate traffic and confirm liveness.
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # CORS_ORIGIN is REQUIRED in production — the server fails closed (blocks
+      # all cross-origin clients) without it. Set this in the Render dashboard
+      # to the deployed web origin, e.g. https://housepartygamez.vercel.app
+      - key: CORS_ORIGIN
+        sync: false
