@@ -111,7 +111,7 @@ export function ImposterPlay({
         Imposter: <span className="font-bold">{view.imposterNickname}</span>
       </p>
       <p
-        className={`rounded-lg border px-4 py-2 text-lg ${view.caught ? 'border-honey/60 bg-honey/15 text-honey' : 'border-punch/50 bg-punch/15 text-punch'}`}
+        className={`rounded-lg border px-4 py-2 text-lg font-bold ${view.caught ? 'border-honey/60 bg-honey/15 text-honey' : 'border-punch/50 bg-punch/15 text-punch'}`}
       >
         {view.caught ? '🎯 Caught!' : '🕵️ Escaped! +2'}
       </p>
