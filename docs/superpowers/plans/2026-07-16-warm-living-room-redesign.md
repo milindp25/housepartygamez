@@ -1,6 +1,6 @@
 # Warm Living Room Redesign Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Re-theme the entire web app (marketing pages, host/join flow, all 14 game components) onto one "Warm Living Room" visual identity, and ship three UX upgrades: a Copy-invite-link button, a segmented room-code input, and an inline 18+ confirm.
 
@@ -99,7 +99,7 @@ The marketing CSS already routes every color through `:root` variables, so this 
 - Modify: `apps/web/src/app/globals.css`
 - Modify: `apps/web/src/lib/games.ts`
 
-- [ ] **Step 1: Replace the `:root` and `@theme` blocks** at the top of `globals.css` with:
+- [x] **Step 1: Replace the `:root` and `@theme` blocks** at the top of `globals.css` with:
 
 ```css
 :root {
@@ -134,7 +134,7 @@ The marketing CSS already routes every color through `:root` variables, so this 
 }
 ```
 
-- [ ] **Step 2: Global variable renames** across the rest of `globals.css` (exact find/replace, all occurrences):
+- [x] **Step 2: Global variable renames** across the rest of `globals.css` (exact find/replace, all occurrences):
   - `var(--midnight)` → `var(--plum)`
   - `var(--iris)` → `var(--flame)`
   - `var(--lime)` → `var(--honey)`
@@ -142,14 +142,14 @@ The marketing CSS already routes every color through `:root` variables, so this 
   - `var(--cyan)` → `var(--orchid)`
   - `var(--muted)` → `var(--mist)`
 
-- [ ] **Step 3: Literal color swaps** (exact find/replace, all occurrences):
+- [x] **Step 3: Literal color swaps** (exact find/replace, all occurrences):
   - `248 250 252` → `253 244 236` (old chalk in rgb() borders/gradients)
   - `124 58 237` → `249 115 22` (iris glows → flame)
   - `34 211 238` → `192 132 252` (cyan glows → orchid)
   - `163 230 53` → `251 191 36` (lime borders/gradients → honey)
   - In `body`, the second radial becomes a punch glow: `rgb(192 132 252 / 10%)` → `rgb(236 72 153 / 10%)` (only the body rule — the marquee tile glow stays orchid)
 
-- [ ] **Step 4: Primary button becomes the flame→punch gradient with dark text.** In `.button-primary` replace `background: var(--flame);` + `color: var(--chalk);` with:
+- [x] **Step 4: Primary button becomes the flame→punch gradient with dark text.** In `.button-primary` replace `background: var(--flame);` + `color: var(--chalk);` with:
 
 ```css
   background: linear-gradient(90deg, var(--flame), var(--punch));
@@ -159,7 +159,7 @@ The marketing CSS already routes every color through `:root` variables, so this 
 
 (Delete the old `box-shadow` line it replaces.) `.skip-link` already uses honey bg + plum text after the renames — leave it.
 
-- [ ] **Step 5: Add app-screen keyframes** inside the existing `@media (prefers-reduced-motion: no-preference)` block (so reduced-motion users get none of it):
+- [x] **Step 5: Add app-screen keyframes** inside the existing `@media (prefers-reduced-motion: no-preference)` block (so reduced-motion users get none of it):
 
 ```css
   .player-chip {
@@ -194,7 +194,7 @@ The marketing CSS already routes every color through `:root` variables, so this 
   }
 ```
 
-- [ ] **Step 6: Remap game accents in `games.ts`.** Change the union and the seven values:
+- [x] **Step 6: Remap game accents in `games.ts`.** Change the union and the seven values:
 
 ```ts
   accent: '#F97316' | '#FBBF24' | '#EC4899' | '#C084FC'
@@ -202,13 +202,13 @@ The marketing CSS already routes every color through `:root` variables, so this 
 
 Per game: would-you-rather `#F97316`, most-likely-to `#FBBF24`, never-have-i-ever `#EC4899`, who-said-that `#C084FC`, imposter `#F97316`, bluff-battle `#FBBF24`, mafia `#EC4899`. (2-column landing grid: no accent repeats horizontally or vertically.)
 
-- [ ] **Step 7: Verify**
+- [x] **Step 7: Verify**
 
 Run: `pnpm --filter @hpg/web test && pnpm -r typecheck && pnpm lint`
 Expected: all pass (`games.test.ts` doesn't assert accents).
 Then start the dev servers and eyeball `/` and `/games/would-you-rather` — warm palette, no cool blues/limes left, focus ring is honey.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add apps/web/src/app/globals.css apps/web/src/lib/games.ts
@@ -226,11 +226,11 @@ Vitest currently runs node-env `.ts` tests only. Component tests (Tasks 3–5) n
 - Create: `apps/web/vitest.config.ts`
 - Create: `apps/web/src/lib/room-code.ts`, `apps/web/src/lib/room-code.test.ts`
 
-- [ ] **Step 1: Add dev deps**
+- [x] **Step 1: Add dev deps**
 
 Run: `pnpm --filter @hpg/web add -D jsdom @testing-library/react @vitejs/plugin-react`
 
-- [ ] **Step 2: Create `apps/web/vitest.config.ts`**
+- [x] **Step 2: Create `apps/web/vitest.config.ts`**
 
 ```ts
 import react from '@vitejs/plugin-react'
@@ -246,7 +246,7 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 3: Write the failing test** — `apps/web/src/lib/room-code.test.ts`:
+- [x] **Step 3: Write the failing test** — `apps/web/src/lib/room-code.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest'
@@ -269,9 +269,9 @@ describe('normalizeRoomCode', () => {
 })
 ```
 
-- [ ] **Step 4: Run to verify failure** — `pnpm --filter @hpg/web test` → FAIL (module not found).
+- [x] **Step 4: Run to verify failure** — `pnpm --filter @hpg/web test` → FAIL (module not found).
 
-- [ ] **Step 5: Implement `apps/web/src/lib/room-code.ts`**
+- [x] **Step 5: Implement `apps/web/src/lib/room-code.ts`**
 
 ```ts
 /**
@@ -287,9 +287,9 @@ export function normalizeRoomCode(raw: string): string {
 }
 ```
 
-- [ ] **Step 6: Run tests** — `pnpm --filter @hpg/web test` → PASS (including all pre-existing lib tests, proving the new config didn't break node-env tests).
+- [x] **Step 6: Run tests** — `pnpm --filter @hpg/web test` → PASS (including all pre-existing lib tests, proving the new config didn't break node-env tests).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/web/package.json pnpm-lock.yaml apps/web/vitest.config.ts apps/web/src/lib/room-code.ts apps/web/src/lib/room-code.test.ts
@@ -303,7 +303,7 @@ git commit -m "test(web): component-test tooling and room-code normalizer"
 **Files:**
 - Create: `apps/web/src/components/ui/Button.tsx`, `Button.test.tsx`, `Pill.tsx`, `Pill.test.tsx`
 
-- [ ] **Step 1: Write failing tests** — `apps/web/src/components/ui/Button.test.tsx`:
+- [x] **Step 1: Write failing tests** — `apps/web/src/components/ui/Button.test.tsx`:
 
 ```tsx
 // @vitest-environment jsdom
@@ -355,9 +355,9 @@ describe('Pill', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify failure** — `pnpm --filter @hpg/web test` → FAIL (modules not found).
+- [x] **Step 2: Run to verify failure** — `pnpm --filter @hpg/web test` → FAIL (modules not found).
 
-- [ ] **Step 3: Implement.** `apps/web/src/components/ui/Button.tsx`:
+- [x] **Step 3: Implement.** `apps/web/src/components/ui/Button.tsx`:
 
 ```tsx
 import type { ButtonHTMLAttributes } from 'react'
@@ -419,9 +419,9 @@ export function Pill({ selected = false, className = '', ...props }: PillProps) 
 }
 ```
 
-- [ ] **Step 4: Run tests** — `pnpm --filter @hpg/web test` → PASS.
+- [x] **Step 4: Run tests** — `pnpm --filter @hpg/web test` → PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/src/components/ui
@@ -437,7 +437,7 @@ git commit -m "feat(web): Button and Pill ui primitives"
 **Files:**
 - Create: `apps/web/src/components/ui/CodeInput.tsx`, `CodeInput.test.tsx`, `CopyLinkButton.tsx`, `CopyLinkButton.test.tsx`, `RoomCodePanel.tsx`, `PlayerChips.tsx`, `PromptCard.tsx`
 
-- [ ] **Step 1: Write failing tests** — `apps/web/src/components/ui/CodeInput.test.tsx`:
+- [x] **Step 1: Write failing tests** — `apps/web/src/components/ui/CodeInput.test.tsx`:
 
 ```tsx
 // @vitest-environment jsdom
@@ -520,9 +520,9 @@ describe('CopyLinkButton', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify failure** — `pnpm --filter @hpg/web test` → FAIL.
+- [x] **Step 2: Run to verify failure** — `pnpm --filter @hpg/web test` → FAIL.
 
-- [ ] **Step 3: Implement.** `apps/web/src/components/ui/CodeInput.tsx`:
+- [x] **Step 3: Implement.** `apps/web/src/components/ui/CodeInput.tsx`:
 
 ```tsx
 'use client'
@@ -744,9 +744,9 @@ export function PromptCard({
 }
 ```
 
-- [ ] **Step 4: Run tests** — `pnpm --filter @hpg/web test` → PASS.
+- [x] **Step 4: Run tests** — `pnpm --filter @hpg/web test` → PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/src/components/ui
@@ -762,7 +762,7 @@ Pure class changes + one Button adoption; all visible strings and DOM roles unch
 **Files:**
 - Modify: `apps/web/src/components/ConnectionBanner.tsx`, `Countdown.tsx`, `Leaderboard.tsx`, `apps/web/src/app/error.tsx`
 
-- [ ] **Step 1: ConnectionBanner** — replace the `<p>` with:
+- [x] **Step 1: ConnectionBanner** — replace the `<p>` with:
 
 ```tsx
     <p
@@ -773,7 +773,7 @@ Pure class changes + one Button adoption; all visible strings and DOM roles unch
     </p>
 ```
 
-- [ ] **Step 2: Countdown** — final `<span>` className becomes:
+- [x] **Step 2: Countdown** — final `<span>` className becomes:
 
 ```tsx
   return (
@@ -783,7 +783,7 @@ Pure class changes + one Button adoption; all visible strings and DOM roles unch
   )
 ```
 
-- [ ] **Step 3: Leaderboard** — `<li>` becomes (leader row gets a honey rim; `{score} {unit}` text preserved):
+- [x] **Step 3: Leaderboard** — `<li>` becomes (leader row gets a honey rim; `{score} {unit}` text preserved):
 
 ```tsx
         <li
@@ -802,7 +802,7 @@ Pure class changes + one Button adoption; all visible strings and DOM roles unch
         </li>
 ```
 
-- [ ] **Step 4: error.tsx** — import Button and re-theme:
+- [x] **Step 4: error.tsx** — import Button and re-theme:
 
 ```tsx
 import { Button } from '@/components/ui/Button'
@@ -820,7 +820,7 @@ import { Button } from '@/components/ui/Button'
     </main>
 ```
 
-- [ ] **Step 5: Verify + commit**
+- [x] **Step 5: Verify + commit**
 
 Run: `pnpm --filter @hpg/web test && pnpm -r typecheck`
 ```bash
@@ -835,7 +835,7 @@ All socket/token/reconnect logic is untouched; only render code and the spicy-co
 **Files:**
 - Modify: `apps/web/src/app/host/page.tsx`
 
-- [ ] **Step 1: Update imports** — remove `import { QRCodeSVG } from 'qrcode.react'`, add:
+- [x] **Step 1: Update imports** — remove `import { QRCodeSVG } from 'qrcode.react'`, add:
 
 ```tsx
 import { Button } from '@/components/ui/Button'
@@ -844,7 +844,7 @@ import { PlayerChips } from '@/components/ui/PlayerChips'
 import { RoomCodePanel } from '@/components/ui/RoomCodePanel'
 ```
 
-- [ ] **Step 2: Replace the confirm flow.** Add state `const [confirmSpicy, setConfirmSpicy] = useState(false)` beside the other useState calls, and replace `startGame` with:
+- [x] **Step 2: Replace the confirm flow.** Add state `const [confirmSpicy, setConfirmSpicy] = useState(false)` beside the other useState calls, and replace `startGame` with:
 
 ```tsx
   const needsSpicyConfirm = gameId !== 'mafia' && tone === 'spicy'
@@ -872,12 +872,12 @@ import { RoomCodePanel } from '@/components/ui/RoomCodePanel'
   }
 ```
 
-- [ ] **Step 3: Re-theme the three non-lobby returns** (drop `bg-slate-950`, `text-white` → `text-chalk`):
+- [x] **Step 3: Re-theme the three non-lobby returns** (drop `bg-slate-950`, `text-white` → `text-chalk`):
   - fatal: `<main className="grid min-h-screen place-items-center p-8 text-chalk">` (keep the `text-red-400` message, add `role="alert"` to it)
   - creating: `<main className="grid min-h-screen place-items-center text-mist">Creating room…</main>`
   - game phase: `<main className="grid min-h-screen place-items-center p-8 text-chalk">`
 
-- [ ] **Step 4: Replace the lobby return** with:
+- [x] **Step 4: Replace the lobby return** with:
 
 ```tsx
   return (
@@ -951,12 +951,12 @@ import { RoomCodePanel } from '@/components/ui/RoomCodePanel'
   )
 ```
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 Run: `pnpm --filter @hpg/web test && pnpm -r typecheck && pnpm --filter @hpg/web e2e host-qr marketing`
 Expected: PASS. Then visually check `/host` on the dev server: warm lobby, copy-link button works (click → "Copied ✓" → paste in a new tab lands on prefilled join), spicy confirm appears inline for a spicy tone and is cancellable.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/app/host/page.tsx
@@ -970,7 +970,7 @@ git commit -m "feat(web): warm host lobby with copy link and inline 18+ confirm"
 **Files:**
 - Modify: `apps/web/src/app/join/page.tsx`
 
-- [ ] **Step 1: Update imports** — add:
+- [x] **Step 1: Update imports** — add:
 
 ```tsx
 import { normalizeRoomCode } from '@/lib/room-code'
@@ -979,7 +979,7 @@ import { CodeInput } from '@/components/ui/CodeInput'
 import { PlayerChips } from '@/components/ui/PlayerChips'
 ```
 
-- [ ] **Step 2: Normalize the prefill** — change the code state initializer to:
+- [x] **Step 2: Normalize the prefill** — change the code state initializer to:
 
 ```tsx
   const [code, setCode] = useState(() => normalizeRoomCode(params.get('code') ?? ''))
@@ -987,7 +987,7 @@ import { PlayerChips } from '@/components/ui/PlayerChips'
 
 (`join()` keeps `code.trim()` — harmless on normalized input.)
 
-- [ ] **Step 3: Re-theme the in-room returns:**
+- [x] **Step 3: Re-theme the in-room returns:**
   - game phase main: `<main className="min-h-screen p-6 text-chalk">`
   - lobby return:
 
@@ -1002,7 +1002,7 @@ import { PlayerChips } from '@/components/ui/PlayerChips'
     )
 ```
 
-- [ ] **Step 4: Replace the form return** with:
+- [x] **Step 4: Replace the form return** with:
 
 ```tsx
   return (
@@ -1031,12 +1031,12 @@ import { PlayerChips } from '@/components/ui/PlayerChips'
   )
 ```
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 Run: `pnpm --filter @hpg/web test && pnpm -r typecheck && pnpm --filter @hpg/web e2e host-qr would-you-rather`
 Expected: PASS (would-you-rather drives the full join → lobby → game loop through the new form). Visually check `/join` on a phone-sized viewport: tiles fill as you type, paste of a lowercase code works, Enter submits.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/app/join/page.tsx
@@ -1051,9 +1051,9 @@ Mechanical pass. For every file: apply the **canonical class mapping table** (to
 
 **Files:** Modify all of `apps/web/src/components/host/{WyrHost,MltHost,NhieHost,WstHost,ImposterHost,BluffHost,MafiaHost}.tsx`
 
-- [ ] **Step 1: Button conversions (all files).** Every `<button onClick={onEnd|onAdvance} className="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-bold">LABEL</button>` becomes `<Button onClick={onEnd|onAdvance}>LABEL</Button>` (labels: `Back to lobby`, `Next`, `Start clues`, `Next speaker`, `Next round`). In MafiaHost the three big buttons become `<Button size="lg" onClick={onAdvance}>Start the vote</Button>`, `<Button size="lg" onClick={onAdvance}>Nightfall</Button>`, `<Button size="lg" onClick={onEnd}>Back to lobby</Button>` (their explicit focus-visible classes are dropped — the global honey ring applies).
+- [x] **Step 1: Button conversions (all files).** Every `<button onClick={onEnd|onAdvance} className="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-bold">LABEL</button>` becomes `<Button onClick={onEnd|onAdvance}>LABEL</Button>` (labels: `Back to lobby`, `Next`, `Start clues`, `Next speaker`, `Next round`). In MafiaHost the three big buttons become `<Button size="lg" onClick={onAdvance}>Start the vote</Button>`, `<Button size="lg" onClick={onAdvance}>Nightfall</Button>`, `<Button size="lg" onClick={onEnd}>Back to lobby</Button>` (their explicit focus-visible classes are dropped — the global honey ring applies).
 
-- [ ] **Step 2: PromptCard adoptions.** Replace each `<p className="text-slate-400">META</p>` + adjacent `<h2 ...>PROMPT</h2>` pair with `<PromptCard meta={<>META</>}>PROMPT</PromptCard>`, preserving the meta JSX (round counters, `<Countdown …/>`) verbatim:
+- [x] **Step 2: PromptCard adoptions.** Replace each `<p className="text-slate-400">META</p>` + adjacent `<h2 ...>PROMPT</h2>` pair with `<PromptCard meta={<>META</>}>PROMPT</PromptCard>`, preserving the meta JSX (round counters, `<Countdown …/>`) verbatim:
   - **WyrHost**: main return (`Would you rather…`).
   - **MltHost**: main return (`Who is most likely to {view.prompt.text}?`).
   - **NhieHost**: main return (`Never have I ever {view.prompt.text}`).
@@ -1063,7 +1063,7 @@ Mechanical pass. For every file: apply the **canonical class mapping table** (to
   - **MafiaHost**: no PromptCard (different structure) — mapping only.
   - Not adopted (leave as plain h2/p with mapped classes): all `finished` headings, WstHost/ImposterHost/BluffHost reveal phases.
 
-- [ ] **Step 3: Class mapping, file-specific occurrences:**
+- [x] **Step 3: Class mapping, file-specific occurrences:**
   - **WyrHost**: option panels `bg-indigo-700` → `border border-orchid/50 bg-orchid/15`, `bg-rose-700` → `border border-punch/50 bg-punch/15`; remaining `text-slate-400` → `text-mist`.
   - **MltHost**: tally `bg-slate-800` li → `border border-line bg-stage`; both `text-slate-400` → `text-mist`.
   - **NhieHost**: yes-name chips `bg-rose-700` → `border border-punch/50 bg-punch/15`; eliminated banner `bg-amber-600` → `border border-honey/60 bg-honey/15 text-honey`; `text-slate-400` → `text-mist`.
@@ -1072,12 +1072,12 @@ Mechanical pass. For every file: apply the **canonical class mapping table** (to
   - **BluffHost**: vote option cards `bg-slate-800` → `border border-line bg-stage`; truth panel `bg-emerald-700` → `border border-honey/60 bg-honey/15 text-honey`; result cards ternary `result.isTruth ? 'bg-emerald-800' : 'bg-slate-800'` → `result.isTruth ? 'border border-honey/60 bg-honey/10' : 'border border-line bg-stage'`; `text-slate-400` → `text-mist`.
   - **MafiaHost**: playerGrid alive `border-slate-600 bg-slate-800 text-white` → `border-line bg-stage text-chalk`, dead `border-slate-800 bg-slate-900 text-slate-600` → `border-line/50 bg-plum/60 text-mist/50`; `text-indigo-200` → `text-orchid`; `text-amber-200` → `text-honey` (×2); `text-rose-300` → `text-punch`; tally/roles `bg-slate-800` li → `border border-line bg-stage` (×2).
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `pnpm -r typecheck && pnpm --filter @hpg/web e2e`
 Expected: full e2e suite PASS (it drives WYR, MLT, Bluff, Mafia host screens end to end).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/src/components/host
@@ -1092,12 +1092,12 @@ Same rules as Task 8: canonical mapping table, `Button` conversions, no logic/st
 
 **Files:** Modify all of `apps/web/src/components/play/{WyrPlay,MltPlay,NhiePlay,WstPlay,ImposterPlay,BluffPlay,MafiaPlay}.tsx`
 
-- [ ] **Step 1: Button conversions:**
+- [x] **Step 1: Button conversions:**
   - **WstPlay**: submit → `<Button onClick={() => draft.trim() && onSubmitAnswer(draft.trim())} disabled={!draft.trim()}>Submit</Button>`
   - **BluffPlay**: submit → `<Button onClick={submit} disabled={!draft.trim() || awaiting}>{awaiting ? 'Submitting…' : 'Submit bluff'}</Button>`
   - **ImposterPlay**: ready → `<Button size="lg" onClick={onReady}>Got it</Button>`
 
-- [ ] **Step 2: Class mapping, file-specific occurrences:**
+- [x] **Step 2: Class mapping, file-specific occurrences:**
   - **WyrPlay**: option ternary `c === 'a' ? 'bg-indigo-700' : 'bg-rose-700'` → `c === 'a' ? 'border border-orchid/50 bg-orchid/15' : 'border border-punch/50 bg-punch/15'`; `ring-white` → `ring-honey`; `text-slate-400` → `text-mist` (×3).
   - **MltPlay**: tally li + candidate buttons `bg-slate-800` → `border border-line bg-stage`; `ring-white` → `ring-honey`; `text-slate-400` → `text-mist`.
   - **NhiePlay**: yes-chips `bg-rose-700` → `border border-punch/50 bg-punch/15`; eliminated banner `bg-amber-600` → `border border-honey/60 bg-honey/15 text-honey`; "You're out" panel `bg-slate-800` → `border border-line bg-stage`; `I have` button `bg-rose-700` → `border border-punch/50 bg-punch/15`; `Never` button `bg-indigo-700` → `border border-orchid/50 bg-orchid/15`; `ring-white` → `ring-honey` (×2); `text-slate-400` → `text-mist` (×2).
@@ -1117,12 +1117,12 @@ const ROLE_STYLES: Record<MafiaRole, string> = {
 
   then: detective log section `bg-slate-900` → `border border-line bg-plum/60`, heading `text-sky-300` → `text-orchid`, empty text `text-slate-500` → `text-mist/70`, entries `bg-slate-800` → `border border-line bg-stage`; spectator banner `border-slate-600 bg-slate-900 … text-slate-300` → `border-line bg-plum/60 … text-chalk/80`; night label `text-indigo-300` → `text-orchid`; candidate buttons (night AND vote) `bg-slate-800 … hover:bg-slate-700` → `border border-line bg-stage … hover:bg-chalk/10` and `focus-visible:outline-white` → `focus-visible:outline-honey`; `ring-indigo-400` → `ring-orchid`; `ring-amber-400` → `ring-honey`; sleep panel `bg-indigo-950/60` → `border border-orchid/30 bg-orchid/10`; day `text-amber-200` → `text-honey`; reveal `text-rose-300` → `text-punch`; tally + allRoles li `bg-slate-800` → `border border-line bg-stage`; `text-slate-400` → `text-mist`.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `pnpm --filter @hpg/web test && pnpm -r typecheck && pnpm --filter @hpg/web e2e`
 Expected: everything PASS (bluff-battle and mafia specs exercise most of these phone screens, including the Button conversions).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/src/components/play
@@ -1133,19 +1133,19 @@ git commit -m "feat(web): warm re-skin of all seven play screens"
 
 ### Task 10: Full verification sweep
 
-- [ ] **Step 1: Full automated pass**
+- [x] **Step 1: Full automated pass**
 
 Run: `pnpm format && pnpm -r test && pnpm -r typecheck && pnpm lint && pnpm --filter @hpg/web e2e`
 Expected: all green. Fix forward anything that isn't; do not weaken tests.
 
-- [ ] **Step 2: Visual pass on the dev servers** (host on desktop viewport, join on mobile viewport):
+- [x] **Step 2: Visual pass on the dev servers** (host on desktop viewport, join on mobile viewport):
   1. `/` and one `/games/[slug]` — warm theme, no leftover cool colors, focus ring honey.
   2. `/host` — lobby, copy link, spicy confirm, then start each of WYR and Mafia and click through 2–3 phases on the TV view.
   3. `/join` — code tiles (type + paste), lobby chips pop in, then the matching phone views for the games above.
   4. Reduced motion (OS setting or devtools emulation): no chip pop, no pulse, no marquee float.
   5. Contrast spot-check with devtools on: `text-mist` on plum, `text-honey` on `bg-honey/15`, plum text on the gradient Button. All must report ≥ 4.5:1.
 
-- [ ] **Step 3: Mark the plan complete and commit**
+- [x] **Step 3: Mark the plan complete and commit**
 
 ```bash
 git add docs/superpowers/plans/2026-07-16-warm-living-room-redesign.md

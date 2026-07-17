@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { MARKETING_GAMES } from '@/lib/games'
+import { homeJsonLd } from '@/lib/seo'
 
 const roomCode = ['P', 'A', 'R', 'T', 'Y', '!'] as const
 
@@ -23,6 +24,7 @@ const roomSteps = [
 export default function Home() {
   return (
     <>
+      <script type="application/ld+json">{JSON.stringify(homeJsonLd())}</script>
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>

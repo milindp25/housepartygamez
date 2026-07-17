@@ -3,8 +3,15 @@ import { expect, test } from '@playwright/test'
 test('a newly created host room displays an accessible join QR code', async ({ browser, page }) => {
   await page.goto('/host')
 
-  await expect(page.getByTestId('room-code')).toHaveText(/^[A-Z]{4}$/)
-  const code = (await page.getByTestId('room-code').innerText()).trim()
+  const roomCode = page.getByTestId('room-code')
+  await expect(roomCode).toHaveText(/^[A-Z]{4}$/)
+  const code = (await roomCode.innerText()).trim()
+  const codeStyle = await roomCode.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return { backgroundImage: style.backgroundImage, color: style.color }
+  })
+  expect(codeStyle.backgroundImage).not.toBe('none')
+  expect(codeStyle.color).toBe('rgba(0, 0, 0, 0)')
   await expect(page.getByText('Scan with your phone to join')).toBeVisible()
 
   const qrCode = page.getByRole('img', { name: 'QR code to join this room' })

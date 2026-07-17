@@ -7,6 +7,7 @@ import {
   getMarketingGame,
   type MarketingGame,
 } from '@/lib/games'
+import { gameJsonLd, socialImageUrl } from '@/lib/seo'
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -28,6 +29,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `Play ${game.name} Online with Friends`,
     description: getMarketingDescription(game),
+    alternates: { canonical: `/games/${game.slug}` },
+    openGraph: {
+      type: 'article',
+      title: `Play ${game.name} Online with Friends`,
+      description: getMarketingDescription(game),
+      url: `/games/${game.slug}`,
+      images: [
+        {
+          url: socialImageUrl(),
+          width: 1200,
+          height: 630,
+          alt: 'HousePartyGamez — Party games everyone plays on their phones',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `Play ${game.name} Online with Friends`,
+      description: getMarketingDescription(game),
+      images: [socialImageUrl()],
+    },
   }
 }
 
@@ -38,6 +60,7 @@ export default async function GamePage({ params }: Props) {
 
   return (
     <div className="detail-page" style={{ '--game-accent': game.accent } as CSSProperties}>
+      <script type="application/ld+json">{JSON.stringify(gameJsonLd(game))}</script>
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
