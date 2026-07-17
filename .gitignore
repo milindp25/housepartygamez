@@ -10,3 +10,4 @@ apps/web/playwright-report/
 .DS_Store
 # Local isolated worktrees used for plan implementation.
 .worktrees/
+.superpowers/

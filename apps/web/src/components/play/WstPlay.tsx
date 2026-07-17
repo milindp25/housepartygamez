@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { WstPlayerView } from '@hpg/shared'
 import { Countdown } from '../Countdown'
 import { Leaderboard } from '../Leaderboard'
+import { Button } from '../ui/Button'
 
 /**
  * Phone rendering of Who Said That. In `answer` phase we render a small
@@ -33,16 +34,16 @@ export function WstPlay({
     if (view.submitted) {
       return (
         <div className="space-y-4 text-center">
-          <p className="text-slate-400">
+          <p className="text-mist">
             Waiting for others… <Countdown deadline={view.deadline} />
           </p>
-          <p className="rounded-lg bg-slate-800 p-6 text-lg">Answer in ✅</p>
+          <p className="rounded-lg border border-line bg-stage p-6 text-lg">Answer in ✅</p>
         </div>
       )
     }
     return (
       <div className="space-y-4 text-center">
-        <p className="text-slate-400">
+        <p className="text-mist">
           Answer privately <Countdown deadline={view.deadline} />
         </p>
         <h2 className="text-xl font-bold">{view.prompt.text}</h2>
@@ -51,16 +52,12 @@ export function WstPlay({
           onChange={(e) => setDraft(e.target.value)}
           maxLength={140}
           placeholder="Your answer (max 140 chars)"
-          className="w-full rounded-lg bg-slate-800 p-4 text-lg"
+          className="w-full rounded-lg border border-line bg-stage p-4 text-lg text-chalk placeholder:text-mist"
           rows={3}
         />
-        <button
-          onClick={() => draft.trim() && onSubmitAnswer(draft.trim())}
-          disabled={!draft.trim()}
-          className="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-bold disabled:opacity-40"
-        >
+        <Button onClick={() => draft.trim() && onSubmitAnswer(draft.trim())} disabled={!draft.trim()}>
           Submit
-        </button>
+        </Button>
       </div>
     )
   }
@@ -68,14 +65,14 @@ export function WstPlay({
   if (view.phase === 'guess') {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-slate-400">
+        <p className="text-mist">
           Answer {view.turn}/{view.totalTurns} <Countdown deadline={view.deadline} />
         </p>
-        <blockquote className="rounded-2xl bg-indigo-700 p-6 text-lg">
+        <blockquote className="rounded-2xl border border-orchid/50 bg-orchid/15 p-6 text-lg">
           &ldquo;{view.answerText}&rdquo;
         </blockquote>
         {view.isYours ? (
-          <p className="rounded-lg bg-slate-800 p-6 text-lg">
+          <p className="rounded-lg border border-line bg-stage p-6 text-lg">
             This one&apos;s yours 🤫 act natural
           </p>
         ) : (
@@ -83,9 +80,9 @@ export function WstPlay({
             <button
               key={c.id}
               onClick={() => onGuess(c.id)}
-              className={`block w-full rounded-2xl bg-slate-800 p-4 text-lg ${
+              className={`block w-full rounded-2xl border border-line bg-stage p-4 text-lg ${
                 view.yourGuess === c.id
-                  ? 'ring-4 ring-white'
+                  ? 'ring-4 ring-honey'
                   : view.yourGuess
                     ? 'opacity-50'
                     : ''
@@ -101,11 +98,11 @@ export function WstPlay({
 
   return (
     <div className="space-y-4 text-center">
-      <blockquote className="rounded-2xl bg-indigo-700 p-6 text-lg">
+      <blockquote className="rounded-2xl border border-orchid/50 bg-orchid/15 p-6 text-lg">
         &ldquo;{view.answerText}&rdquo;
       </blockquote>
       <p className="text-3xl font-bold">— {view.authorNickname}</p>
-      <p className="text-slate-400">
+      <p className="text-mist">
         {view.correctGuessers.length === 0
           ? 'Nobody guessed it!'
           : `Got it: ${view.correctGuessers.join(', ')}`}

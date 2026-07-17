@@ -27,7 +27,7 @@ export function MltPlay({
           {view.tally.map((row) => (
             <li
               key={row.playerId}
-              className="flex justify-between rounded-lg bg-slate-800 px-4 py-3"
+              className="flex justify-between rounded-lg border border-line bg-stage px-4 py-3"
             >
               <span>{row.nickname}</span>
               <span>{row.count}</span>
@@ -39,7 +39,7 @@ export function MltPlay({
   }
   return (
     <div className="space-y-4 text-center">
-      <p className="text-slate-400">
+      <p className="text-mist">
         Round {view.round}/{view.totalRounds} <Countdown deadline={view.deadline} />
       </p>
       <h2 className="text-xl font-bold">Who is most likely to {view.prompt.text}?</h2>
@@ -47,8 +47,8 @@ export function MltPlay({
         <button
           key={c.id}
           onClick={() => onVote(c.id)}
-          className={`block w-full rounded-2xl bg-slate-800 p-4 text-lg ${
-            view.yourVote === c.id ? 'ring-4 ring-white' : view.yourVote ? 'opacity-50' : ''
+          className={`block w-full rounded-2xl border border-line bg-stage p-4 text-lg ${
+            view.yourVote === c.id ? 'ring-4 ring-honey' : view.yourVote ? 'opacity-50' : ''
           }`}
         >
           {c.nickname}

@@ -2,6 +2,8 @@
 import type { MltHostView } from '@hpg/shared'
 import { Countdown } from '../Countdown'
 import { Leaderboard } from '../Leaderboard'
+import { Button } from '../ui/Button'
+import { PromptCard } from '../ui/PromptCard'
 
 /** TV rendering of Most Likely To. Pure renderer: state in, pixels out. */
 export function MltHost({
@@ -18,21 +20,24 @@ export function MltHost({
       <div className="space-y-6 text-center">
         <h2 className="text-4xl font-bold">Most voted overall</h2>
         <Leaderboard rows={view.leaderboard} unit="votes" />
-        <button onClick={onEnd} className="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-bold">
-          Back to lobby
-        </button>
+        <Button onClick={onEnd}>Back to lobby</Button>
       </div>
     )
   }
   return (
     <div className="space-y-8 text-center">
-      <p className="text-slate-400">
-        Round {view.round}/{view.totalRounds}{' '}
-        {view.phase === 'vote' && <Countdown deadline={view.deadline} />}
-      </p>
-      <h2 className="text-4xl font-bold">Who is most likely to {view.prompt.text}?</h2>
+      <PromptCard
+        meta={
+          <>
+            Round {view.round}/{view.totalRounds}{' '}
+            {view.phase === 'vote' && <Countdown deadline={view.deadline} />}
+          </>
+        }
+      >
+        Who is most likely to {view.prompt.text}?
+      </PromptCard>
       {view.phase === 'vote' && (
-        <p className="text-xl text-slate-400">
+        <p className="text-xl text-mist">
           {view.votedCount}/{view.totalPlayers} voted
         </p>
       )}
@@ -42,13 +47,13 @@ export function MltHost({
             {view.tally.map((row) => (
               <li
                 key={row.playerId}
-                className="flex justify-between rounded-lg bg-slate-800 px-4 py-3 text-xl"
+                className="flex justify-between rounded-lg border border-line bg-stage px-4 py-3 text-xl"
               >
                 <span>{row.nickname}</span>
                 <span>
                   {'🔥'.repeat(row.count)} {row.count}
                   {row.voters && row.voters.length > 0 && (
-                    <span className="ml-2 text-sm text-slate-400">
+                    <span className="ml-2 text-sm text-mist">
                       ({row.voters.join(', ')})
                     </span>
                   )}
@@ -56,12 +61,7 @@ export function MltHost({
               </li>
             ))}
           </ul>
-          <button
-            onClick={onAdvance}
-            className="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-bold"
-          >
-            Next
-          </button>
+          <Button onClick={onAdvance}>Next</Button>
         </>
       )}
     </div>

@@ -10,10 +10,10 @@ const ROLE_LABELS: Record<MafiaRole, string> = {
 }
 
 const ROLE_STYLES: Record<MafiaRole, string> = {
-  mafia: 'border-rose-500/60 bg-rose-950/80 text-rose-100',
-  detective: 'border-sky-500/60 bg-sky-950/80 text-sky-100',
-  doctor: 'border-emerald-500/60 bg-emerald-950/80 text-emerald-100',
-  civilian: 'border-slate-500/60 bg-slate-800/80 text-slate-100',
+  mafia: 'border-punch/60 bg-punch/15 text-chalk',
+  detective: 'border-orchid/60 bg-orchid/15 text-chalk',
+  doctor: 'border-honey/60 bg-honey/15 text-chalk',
+  civilian: 'border-line bg-stage text-chalk',
 }
 
 function announcement(view: Extract<MafiaPlayerView, { phase: 'day' }>): string {
@@ -45,14 +45,14 @@ export function MafiaPlay({
     </section>
   )
   const detectiveLog = view.detectiveLog ? (
-    <section className="rounded-2xl bg-slate-900 p-4">
-      <h2 className="mb-2 font-bold text-sky-300">Detective log</h2>
+    <section className="rounded-2xl border border-line bg-plum/60 p-4">
+      <h2 className="mb-2 font-bold text-orchid">Detective log</h2>
       {view.detectiveLog.length === 0 ? (
-        <p className="text-sm text-slate-500">No investigations yet.</p>
+        <p className="text-sm text-mist/70">No investigations yet.</p>
       ) : (
         <ul className="space-y-2">
           {view.detectiveLog.map((entry, index) => (
-            <li key={`${entry.targetNickname}-${index}`} className="rounded-lg bg-slate-800 px-3 py-2">
+            <li key={`${entry.targetNickname}-${index}`} className="rounded-lg border border-line bg-stage px-3 py-2">
               {entry.targetNickname}: {entry.isMafia ? 'MAFIA' : 'NOT MAFIA'}
             </li>
           ))}
@@ -61,7 +61,7 @@ export function MafiaPlay({
     </section>
   ) : null
   const spectatorBanner = !view.isAlive ? (
-    <p className="rounded-2xl border border-slate-600 bg-slate-900 p-4 text-center font-bold text-slate-300">
+    <p className="rounded-2xl border border-line bg-plum/60 p-4 text-center font-bold text-chalk/80">
       💀 You&apos;re out — no spoilers on your face, please
     </p>
   ) : null
@@ -79,7 +79,7 @@ export function MafiaPlay({
     phase = instruction ? (
       <section className="space-y-4 text-center">
         <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-indigo-300">Night {view.day}</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-orchid">Night {view.day}</p>
           <h2 className="mt-2 text-2xl font-bold">{instruction}</h2>
           <Countdown deadline={view.deadline} />
         </div>
@@ -88,8 +88,8 @@ export function MafiaPlay({
             <button
               key={candidate.id}
               onClick={() => onTarget(candidate.id)}
-              className={`rounded-2xl bg-slate-800 p-4 text-lg font-semibold transition hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
-                view.yourTarget === candidate.id ? 'ring-4 ring-indigo-400' : ''
+              className={`rounded-2xl border border-line bg-stage p-4 text-lg font-semibold transition hover:bg-chalk/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-honey ${
+                view.yourTarget === candidate.id ? 'ring-4 ring-orchid' : ''
               }`}
             >
               {candidate.nickname}
@@ -98,7 +98,7 @@ export function MafiaPlay({
         </div>
       </section>
     ) : (
-      <section className="space-y-3 rounded-2xl bg-indigo-950/60 p-8 text-center">
+      <section className="space-y-3 rounded-2xl border border-orchid/30 bg-orchid/10 p-8 text-center">
         <p className="text-3xl">😴 The town sleeps…</p>
         <Countdown deadline={view.deadline} />
       </section>
@@ -107,7 +107,7 @@ export function MafiaPlay({
     phase = (
       <section className="space-y-5 text-center">
         <p className="text-2xl font-black">{announcement(view)}</p>
-        <p className="text-lg text-amber-200">Discuss out loud. Who seems suspicious?</p>
+        <p className="text-lg text-honey">Discuss out loud. Who seems suspicious?</p>
         <Countdown deadline={view.deadline} />
       </section>
     )
@@ -117,15 +117,15 @@ export function MafiaPlay({
         <h2 className="text-2xl font-black">Vote to eliminate</h2>
         <Countdown deadline={view.deadline} />
         {view.candidates.length === 0 ? (
-          <p className="text-slate-400">Watch the town decide.</p>
+          <p className="text-mist">Watch the town decide.</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {view.candidates.map((candidate) => (
               <button
                 key={candidate.id}
                 onClick={() => onTarget(candidate.id)}
-                className={`rounded-2xl bg-slate-800 p-4 text-lg font-semibold transition hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
-                  view.yourVote === candidate.id ? 'ring-4 ring-amber-400' : ''
+                className={`rounded-2xl border border-line bg-stage p-4 text-lg font-semibold transition hover:bg-chalk/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-honey ${
+                  view.yourVote === candidate.id ? 'ring-4 ring-honey' : ''
                 }`}
               >
                 {candidate.nickname}
@@ -144,11 +144,11 @@ export function MafiaPlay({
             : 'The vote was tied — no one was eliminated'}
         </h2>
         {view.revealedRole && (
-          <p className="text-xl text-rose-300">They were {roleName(view.revealedRole)}</p>
+          <p className="text-xl text-punch">They were {roleName(view.revealedRole)}</p>
         )}
         <ul className="mx-auto max-w-sm space-y-2">
           {view.tally.map((row) => (
-            <li key={row.nickname} className="flex justify-between rounded-lg bg-slate-800 px-4 py-2">
+            <li key={row.nickname} className="flex justify-between rounded-lg border border-line bg-stage px-4 py-2">
               <span>{row.nickname}</span>
               <span>{row.count} votes</span>
             </li>
@@ -162,7 +162,7 @@ export function MafiaPlay({
         <h2 className="text-4xl font-black">🏆 {view.winner === 'town' ? 'Town' : 'Mafia'} wins!</h2>
         <ul className="mx-auto max-w-md space-y-2">
           {view.allRoles.map((row) => (
-            <li key={row.nickname} className="flex justify-between rounded-lg bg-slate-800 px-4 py-3">
+            <li key={row.nickname} className="flex justify-between rounded-lg border border-line bg-stage px-4 py-3">
               <span>{row.nickname}</span>
               <span className="font-bold">{ROLE_LABELS[row.role]}</span>
             </li>

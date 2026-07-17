@@ -2,6 +2,7 @@
 import type { ImposterPlayerView } from '@hpg/shared'
 import { Countdown } from '../Countdown'
 import { Leaderboard } from '../Leaderboard'
+import { Button } from '../ui/Button'
 
 /**
  * Phone rendering of Imposter. The imposter's device NEVER receives the
@@ -29,35 +30,32 @@ export function ImposterPlay({
   if (view.phase === 'word') {
     return (
       <div className="space-y-6 text-center">
-        <p className="text-slate-400">
+        <p className="text-mist">
           Round {view.round}/{view.totalRounds}
         </p>
         {view.isImposter ? (
-          <div className="space-y-4 rounded-2xl bg-rose-800 p-6">
+          <div className="space-y-4 rounded-2xl border border-punch/50 bg-punch/15 p-6">
             <p className="text-2xl font-bold">🕵️ You are the IMPOSTER</p>
             {view.hint && (
               <p className="text-lg">
                 Category: <span className="font-bold">{view.hint}</span>
               </p>
             )}
-            <p className="text-slate-300">Blend in. Give a plausible one-word clue.</p>
+            <p className="text-chalk/80">Blend in. Give a plausible one-word clue.</p>
           </div>
         ) : (
-          <div className="space-y-4 rounded-2xl bg-indigo-700 p-6">
-            <p className="text-lg text-slate-300">The word is</p>
+          <div className="space-y-4 rounded-2xl border border-orchid/50 bg-orchid/15 p-6">
+            <p className="text-lg text-chalk/80">The word is</p>
             <p className="text-4xl font-bold">{view.word}</p>
-            <p className="text-slate-300">Don&apos;t say it. Give a related clue.</p>
+            <p className="text-chalk/80">Don&apos;t say it. Give a related clue.</p>
           </div>
         )}
         {view.ready ? (
-          <p className="text-slate-400">Waiting for others…</p>
+          <p className="text-mist">Waiting for others…</p>
         ) : (
-          <button
-            onClick={onReady}
-            className="rounded-lg bg-emerald-600 px-8 py-4 text-xl font-bold"
-          >
+          <Button size="lg" onClick={onReady}>
             Got it
-          </button>
+          </Button>
         )}
       </div>
     )
@@ -65,10 +63,10 @@ export function ImposterPlay({
   if (view.phase === 'clues') {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-slate-400">
+        <p className="text-mist">
           Round {view.round}/{view.totalRounds} <Countdown deadline={view.deadline} />
         </p>
-        <div className="rounded-lg bg-slate-800 p-3 text-sm">
+        <div className="rounded-lg border border-line bg-stage p-3 text-sm">
           {view.isImposter ? (
             <>🕵️ You&apos;re the imposter{view.hint ? ` — category: ${view.hint}` : ''}</>
           ) : (
@@ -84,7 +82,7 @@ export function ImposterPlay({
   if (view.phase === 'vote') {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-slate-400">
+        <p className="text-mist">
           Round {view.round}/{view.totalRounds} <Countdown deadline={view.deadline} />
         </p>
         <h2 className="text-xl font-bold">Who&apos;s the imposter?</h2>
@@ -92,8 +90,8 @@ export function ImposterPlay({
           <button
             key={c.id}
             onClick={() => onVote(c.id)}
-            className={`block w-full rounded-2xl bg-slate-800 p-4 text-lg ${
-              view.yourVote === c.id ? 'ring-4 ring-white' : view.yourVote ? 'opacity-50' : ''
+            className={`block w-full rounded-2xl border border-line bg-stage p-4 text-lg ${
+              view.yourVote === c.id ? 'ring-4 ring-honey' : view.yourVote ? 'opacity-50' : ''
             }`}
           >
             {c.nickname}
@@ -104,7 +102,7 @@ export function ImposterPlay({
   }
   return (
     <div className="space-y-4 text-center">
-      <p className="text-slate-400">
+      <p className="text-mist">
         Round {view.round}/{view.totalRounds}
       </p>
       <p className="text-lg">The word was</p>
@@ -113,7 +111,7 @@ export function ImposterPlay({
         Imposter: <span className="font-bold">{view.imposterNickname}</span>
       </p>
       <p
-        className={`rounded-lg px-4 py-2 text-lg ${view.caught ? 'bg-emerald-700' : 'bg-rose-700'}`}
+        className={`rounded-lg border px-4 py-2 text-lg font-bold ${view.caught ? 'border-honey/60 bg-honey/15 text-honey' : 'border-punch/50 bg-punch/15 text-punch'}`}
       >
         {view.caught ? '🎯 Caught!' : '🕵️ Escaped! +2'}
       </p>

@@ -27,7 +27,7 @@ export function WyrPlay({
   const picked = view.yourChoice
   return (
     <div className="space-y-6 text-center">
-      <p className="text-slate-400">
+      <p className="text-mist">
         Round {view.round}/{view.totalRounds}{' '}
         {view.phase === 'vote' && <Countdown deadline={view.deadline} />}
       </p>
@@ -38,8 +38,8 @@ export function WyrPlay({
           disabled={view.phase !== 'vote'}
           onClick={() => onVote(c)}
           className={`block w-full rounded-2xl p-6 text-lg ${
-            c === 'a' ? 'bg-indigo-700' : 'bg-rose-700'
-          } ${picked === c ? 'ring-4 ring-white' : picked ? 'opacity-50' : ''}`}
+            c === 'a' ? 'border border-orchid/50 bg-orchid/15' : 'border border-punch/50 bg-punch/15'
+          } ${picked === c ? 'ring-4 ring-honey' : picked ? 'opacity-50' : ''}`}
         >
           {view.prompt[c]}
           {view.phase === 'reveal' && (
@@ -48,10 +48,10 @@ export function WyrPlay({
         </button>
       ))}
       {view.phase === 'vote' && picked && (
-        <p className="text-slate-400">Vote locked — tap to change</p>
+        <p className="text-mist">Vote locked — tap to change</p>
       )}
       {view.phase === 'reveal' && (
-        <p className="text-slate-400">
+        <p className="text-mist">
           {view.majority === 'tie' ? 'Dead tie!' : 'Majority wins a point'}
         </p>
       )}

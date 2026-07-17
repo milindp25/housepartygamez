@@ -1,6 +1,7 @@
 'use client'
 import type { MafiaHostView, MafiaRole } from '@hpg/shared'
 import { Countdown } from '../Countdown'
+import { Button } from '../ui/Button'
 
 const ROLE_LABELS: Record<MafiaRole, string> = {
   mafia: '🔪 MAFIA',
@@ -25,8 +26,8 @@ function playerGrid(view: MafiaHostView): React.ReactNode {
           key={player.id}
           className={`rounded-xl border px-4 py-3 text-center text-lg font-bold ${
             player.alive
-              ? 'border-slate-600 bg-slate-800 text-white'
-              : 'border-slate-800 bg-slate-900 text-slate-600 line-through'
+              ? 'border-line bg-stage text-chalk'
+              : 'border-line/50 bg-plum/60 text-mist/60 line-through'
           }`}
         >
           {!player.alive && '💀 '}
@@ -52,7 +53,7 @@ export function MafiaHost({
     phase = (
       <section className="space-y-5 text-center">
         <h2 className="text-5xl font-black">🌙 Night {view.day} — the town sleeps</h2>
-        <p className="text-xl text-indigo-200">
+        <p className="text-xl text-orchid">
           {view.actionsDone}/{view.actionsNeeded} night actions complete
         </p>
         <Countdown deadline={view.deadline} />
@@ -62,15 +63,12 @@ export function MafiaHost({
     phase = (
       <section className="space-y-6 text-center">
         <h2 className="max-w-5xl text-5xl font-black">{dayAnnouncement(view)}</h2>
-        <p className="text-2xl text-amber-200">Discuss out loud. Find the Mafia.</p>
+        <p className="text-2xl text-honey">Discuss out loud. Find the Mafia.</p>
         <Countdown deadline={view.deadline} />
         <div>
-          <button
-            onClick={onAdvance}
-            className="rounded-xl bg-amber-500 px-8 py-4 text-xl font-black text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-          >
+          <Button size="lg" onClick={onAdvance}>
             Start the vote
-          </button>
+          </Button>
         </div>
       </section>
     )
@@ -78,7 +76,7 @@ export function MafiaHost({
     phase = (
       <section className="space-y-5 text-center">
         <h2 className="text-5xl font-black">The town votes</h2>
-        <p className="text-2xl text-amber-200">
+        <p className="text-2xl text-honey">
           {view.votedCount}/{view.totalVoters} voted
         </p>
         <Countdown deadline={view.deadline} />
@@ -93,22 +91,19 @@ export function MafiaHost({
             : 'The vote was tied — no one was eliminated'}
         </h2>
         {view.revealedRole && (
-          <p className="text-3xl text-rose-300">They were {ROLE_LABELS[view.revealedRole]}</p>
+          <p className="text-3xl text-punch">They were {ROLE_LABELS[view.revealedRole]}</p>
         )}
         <ul className="mx-auto max-w-lg space-y-2">
           {view.tally.map((row) => (
-            <li key={row.nickname} className="flex justify-between rounded-lg bg-slate-800 px-5 py-3 text-xl">
+            <li key={row.nickname} className="flex justify-between rounded-lg border border-line bg-stage px-5 py-3 text-xl">
               <span>{row.nickname}</span>
               <span>{row.count} votes</span>
             </li>
           ))}
         </ul>
-        <button
-          onClick={onAdvance}
-          className="rounded-xl bg-indigo-500 px-8 py-4 text-xl font-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-        >
+        <Button size="lg" onClick={onAdvance}>
           Nightfall
-        </button>
+        </Button>
       </section>
     )
   } else {
@@ -117,15 +112,15 @@ export function MafiaHost({
         <h2 className="text-6xl font-black">🏆 {view.winner === 'town' ? 'Town' : 'Mafia'} wins!</h2>
         <ul className="mx-auto grid max-w-2xl gap-2 sm:grid-cols-2">
           {view.allRoles.map((row) => (
-            <li key={row.nickname} className="flex justify-between rounded-lg bg-slate-800 px-4 py-3">
+            <li key={row.nickname} className="flex justify-between rounded-lg border border-line bg-stage px-4 py-3">
               <span>{row.nickname}</span>
               <span className="font-bold">{ROLE_LABELS[row.role]}</span>
             </li>
           ))}
         </ul>
-        <button onClick={onEnd} className="rounded-xl bg-emerald-600 px-8 py-4 text-xl font-black">
+        <Button size="lg" onClick={onEnd}>
           Back to lobby
-        </button>
+        </Button>
       </section>
     )
   }

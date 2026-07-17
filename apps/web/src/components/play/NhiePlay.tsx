@@ -27,14 +27,14 @@ export function NhiePlay({
         {view.yesNames && view.yesNames.length > 0 && (
           <ul className="flex flex-wrap justify-center gap-2">
             {view.yesNames.map((n) => (
-              <li key={n} className="rounded-full bg-rose-700 px-3 py-1">
+              <li key={n} className="rounded-full border border-punch/50 bg-punch/15 px-3 py-1">
                 {n}
               </li>
             ))}
           </ul>
         )}
         {view.eliminatedNow.length > 0 && (
-          <p className="rounded-lg bg-amber-600 px-4 py-2">
+          <p className="rounded-lg border border-honey/60 bg-honey/15 text-honey px-4 py-2">
             Out: {view.eliminatedNow.join(', ')}
           </p>
         )}
@@ -45,7 +45,7 @@ export function NhiePlay({
     return (
       <div className="space-y-4 text-center">
         <h2 className="text-xl font-bold">Never have I ever {view.prompt.text}</h2>
-        <p className="rounded-lg bg-slate-800 p-6 text-lg">
+        <p className="rounded-lg border border-line bg-stage p-6 text-lg">
           You&apos;re out — enjoy the show 🍿
         </p>
       </div>
@@ -54,28 +54,28 @@ export function NhiePlay({
   const picked = view.yourAnswer
   return (
     <div className="space-y-4 text-center">
-      <p className="text-slate-400">
+      <p className="text-mist">
         Round {view.round}/{view.totalRounds} <Countdown deadline={view.deadline} />
       </p>
       <h2 className="text-xl font-bold">Never have I ever {view.prompt.text}</h2>
       <button
         onClick={() => onAnswer(true)}
-        className={`block w-full rounded-2xl bg-rose-700 p-6 text-lg ${
-          picked === true ? 'ring-4 ring-white' : picked !== null ? 'opacity-50' : ''
+        className={`block w-full rounded-2xl border border-punch/50 bg-punch/15 p-6 text-lg ${
+          picked === true ? 'ring-4 ring-honey' : picked !== null ? 'opacity-50' : ''
         }`}
       >
         I have 🙋
       </button>
       <button
         onClick={() => onAnswer(false)}
-        className={`block w-full rounded-2xl bg-indigo-700 p-6 text-lg ${
-          picked === false ? 'ring-4 ring-white' : picked !== null ? 'opacity-50' : ''
+        className={`block w-full rounded-2xl border border-orchid/50 bg-orchid/15 p-6 text-lg ${
+          picked === false ? 'ring-4 ring-honey' : picked !== null ? 'opacity-50' : ''
         }`}
       >
         Never 😇
       </button>
       {picked !== null && (
-        <p className="text-slate-400">Answer locked — tap the other to change</p>
+        <p className="text-mist">Answer locked — tap the other to change</p>
       )}
     </div>
   )
